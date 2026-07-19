@@ -1,0 +1,234 @@
+/* css/styles.css
+   Base: variables de diseño, reset, tipografía y layout general de
+   Café Flopexo. La paleta y la sensación "cafetería literaria otoñal"
+   están definidas aquí como tokens para reutilizarse en toda la app. */
+
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Karla:wght@400;500;700&display=swap");
+
+:root {
+  /* Paleta principal (definida por el brief) */
+  --color-olive: #575323;
+  --color-yellow: #EEC16D;
+  --color-orange-soft: #F2A45A;
+  --color-orange-strong: #FA8045;
+  --color-coffee-red: #7E3019;
+  --color-cream: #FBF3E6;
+  --color-cream-2: #F5E9D6;
+  --color-ink: #2C2013;
+
+  /* Superficies */
+  --surface-card: #FFFCF6;
+  --surface-card-border: rgba(87, 83, 35, 0.14);
+  --shadow-soft: 0 8px 24px rgba(78, 49, 22, 0.10);
+  --shadow-lift: 0 14px 32px rgba(78, 49, 22, 0.16);
+
+  /* Tipografía */
+  --font-display: "Fraunces", Georgia, "Times New Roman", serif;
+  --font-body: "Karla", "Segoe UI", sans-serif;
+
+  /* Radios y espaciados */
+  --radius-lg: 20px;
+  --radius-md: 14px;
+  --radius-sm: 9px;
+  --space-1: 0.4rem;
+  --space-2: 0.8rem;
+  --space-3: 1.4rem;
+  --space-4: 2.2rem;
+  --space-5: 3.4rem;
+
+  /* Estados */
+  --focus-ring: 0 0 0 3px rgba(250, 128, 69, 0.45);
+  --color-success: #4C6B3C;
+  --color-success-bg: #E8F0DF;
+  --color-error: #A23B2E;
+  --color-error-bg: #FBE7E2;
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  color: var(--color-ink);
+  background:
+    radial-gradient(ellipse at top left, rgba(238, 193, 109, 0.25), transparent 55%),
+    var(--color-cream);
+  background-attachment: fixed;
+  line-height: 1.55;
+  min-height: 100vh;
+}
+
+/* Textura discreta de papel */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.35;
+  background-image:
+    radial-gradient(rgba(87, 83, 35, 0.05) 1px, transparent 1px);
+  background-size: 3px 3px;
+  z-index: 0;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  color: var(--color-coffee-red);
+  margin: 0 0 var(--space-2);
+  line-height: 1.2;
+}
+
+h1 { font-size: clamp(1.8rem, 2.6vw, 2.6rem); font-weight: 600; }
+h2 { font-size: clamp(1.4rem, 2vw, 1.9rem); font-weight: 600; }
+h3 { font-size: 1.2rem; font-weight: 600; }
+
+p { margin: 0 0 var(--space-2); }
+
+a {
+  color: var(--color-coffee-red);
+  text-decoration-color: rgba(126, 48, 25, 0.35);
+}
+a:hover { text-decoration-color: currentColor; }
+
+:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-radius: var(--radius-sm);
+}
+
+img { max-width: 100%; display: block; }
+
+.container {
+  width: min(1100px, 92%);
+  margin-inline: auto;
+  position: relative;
+  z-index: 1;
+}
+
+/* --- Ocultar contenido privado mientras se valida la sesión --- */
+body.auth-checking .app-shell,
+body.auth-no-profile .app-shell {
+  display: none;
+}
+.session-loader {
+  display: none;
+  min-height: 100vh;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: var(--space-2);
+  text-align: center;
+}
+body.auth-checking .session-loader { display: flex; }
+body.auth-no-profile .no-profile-message { display: flex; }
+.no-profile-message {
+  display: none;
+  min-height: 100vh;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: var(--space-2);
+  text-align: center;
+  padding: var(--space-3);
+}
+
+/* --- Header / navegación --- */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: rgba(251, 243, 230, 0.92);
+  backdrop-filter: blur(6px);
+  border-bottom: 1px solid var(--surface-card-border);
+}
+.site-header__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2) 0;
+  gap: var(--space-2);
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.25rem;
+  color: var(--color-coffee-red);
+  text-decoration: none;
+}
+.brand__mark { flex-shrink: 0; }
+
+.nav-toggle {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: var(--space-1);
+}
+.nav-toggle__bar {
+  display: block;
+  width: 24px;
+  height: 2px;
+  background: var(--color-coffee-red);
+  margin: 5px 0;
+  border-radius: 2px;
+}
+
+.main-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.main-nav__links {
+  list-style: none;
+  display: flex;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+}
+.main-nav__links a {
+  display: inline-block;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  font-weight: 500;
+  color: var(--color-olive);
+}
+.main-nav__links a:hover,
+.main-nav__links a[aria-current="page"] {
+  background: var(--color-yellow);
+  color: var(--color-ink);
+}
+
+main { padding-block: var(--space-4); position: relative; z-index: 1; }
+
+.page-title { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-2); flex-wrap: wrap; margin-bottom: var(--space-3); }
+
+.lit-quote {
+  font-family: var(--font-display);
+  font-style: italic;
+  color: var(--color-olive);
+  border-left: 3px solid var(--color-orange-strong);
+  padding-left: var(--space-2);
+}
+
+.site-footer {
+  text-align: center;
+  padding: var(--space-4) var(--space-2);
+  color: var(--color-olive);
+  font-size: 0.9rem;
+}

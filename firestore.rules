@@ -1,0 +1,197 @@
+rules_version = '2';
+
+// =============================================================================
+// Café Flopexo — Firestore Security Rules
+// =============================================================================
+// Filosofía: el frontend (JS) oculta botones y valida formularios por
+// comodidad, pero la seguridad REAL vive aquí. Ninguna operación de
+// escritura debe depender solo de lo que el cliente decide mostrar.
+//
+// Estructura:
+//   users/{uid}
+//   books/{bookId}
+//   books/{bookId}/reviews/{uid}
+//   recommendations/{recId}
+//   events/{eventId}
+//   settings/general
+// =============================================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --- Helpers ---------------------------------------------------------
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function myUid() {
+      return request.auth.uid;
+    }
+
+    function myProfile() {
+      return get(/databases/$(database)/documents/users/$(myUid())).data;
+    }
+
+    function isAdmin() {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/users/$(myUid()))
+        && myProfile().role == 'admin';
+    }
+
+    function isMember() {
+      // Cualquier usuario autenticado que ya tenga documento de perfil.
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(myUid()));
+    }
+
+    // Solo permite las claves indicadas (evita campos adicionales inesperados).
+    function hasOnlyKeys(allowedKeys) {
+      return request.resource.data.keys().hasOnly(allowedKeys);
+    }
+
+    function isString(value, maxLen) {
+      return value is string && value.size() <= maxLen;
+    }
+
+    // --- users/{uid} -------------------------------------------------------
+    // Cada miembro puede leer todos los perfiles (directorio del club) y
+    // modificar únicamente el suyo, sin poder cambiar su propio rol ni
+    // correo. El rol y el correo solo se gestionan manualmente desde la
+    // consola de Firebase por la administradora.
+    match /users/{uid} {
+      // Un usuario recién autenticado con Google puede comprobar si su propio
+      // perfil ya fue aprobado. Los perfiles ajenos siguen siendo privados
+      // hasta que forme parte del club.
+      allow read: if (isSignedIn() && myUid() == uid) || isMember();
+
+      allow create: if false; // Los perfiles se crean manualmente desde consola.
+
+      allow update: if isSignedIn() && myUid() == uid
+        && hasOnlyKeys(['displayName', 'bio', 'favoriteGenres', 'avatarId',
+                        'email', 'role', 'joinedAt', 'reviewCount'])
+        // El rol y el correo no pueden cambiar respecto al valor existente:
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.email == resource.data.email
+        && isString(request.resource.data.displayName, 60)
+        && isString(request.resource.data.bio, 280)
+        && request.resource.data.favoriteGenres is list
+        && request.resource.data.favoriteGenres.size() <= 8;
+
+      allow delete: if false;
+    }
+
+    // --- books/{bookId} ------------------------------------------------------
+    // Lectura: cualquier miembro. Escritura: solo admin.
+    match /books/{bookId} {
+      allow read: if isMember();
+
+      allow create: if isAdmin()
+        && hasOnlyKeys(['title', 'author', 'synopsis', 'genre', 'pages',
+                        'coverUrl', 'pdfPath', 'status', 'startDate', 'endDate',
+                        'chaptersAssigned', 'archived', 'avgRating', 'reviewCount',
+                        'createdAt'])
+        && isString(request.resource.data.title, 200)
+        && isString(request.resource.data.author, 200)
+        && request.resource.data.status in ['leyendo', 'proximo', 'terminado'];
+
+      allow update: if isAdmin()
+        // Admin puede actualizar campos del libro; avgRating/reviewCount
+        // también se recalculan desde transacciones de reseñas (que
+        // corren con permisos de miembro, ver más abajo).
+        && (
+          hasOnlyKeys(['title', 'author', 'synopsis', 'genre', 'pages',
+                       'coverUrl', 'pdfPath', 'status', 'startDate', 'endDate',
+                       'chaptersAssigned', 'archived', 'avgRating', 'reviewCount',
+                       'createdAt'])
+        );
+
+      // Actualización especial: cualquier miembro puede modificar SOLO
+      // avgRating y reviewCount como parte de la transacción al escribir su
+      // propia reseña (ver reglas de reviews). Se permite aquí de forma
+      // acotada porque runTransaction requiere permiso también sobre el
+      // documento padre.
+      allow update: if isMember()
+        && hasOnlyKeys(['avgRating', 'reviewCount'])
+        && request.resource.data.avgRating is number
+        && request.resource.data.avgRating >= 0
+        && request.resource.data.avgRating <= 5
+        && request.resource.data.reviewCount is int
+        && request.resource.data.reviewCount >= 0;
+
+      allow delete: if false; // Nunca se elimina un libro; se archiva.
+
+      // --- reviews subcollection -------------------------------------------
+      // El ID del documento es el UID del autor: como máximo una reseña
+      // por miembro y por libro.
+      match /reviews/{reviewUid} {
+        allow read: if isMember();
+
+        allow create, update: if isSignedIn() && myUid() == reviewUid
+          && hasOnlyKeys(['rating', 'text', 'authorName', 'authorAvatar',
+                          'createdAt', 'updatedAt'])
+          && request.resource.data.rating is int
+          && request.resource.data.rating >= 1
+          && request.resource.data.rating <= 5
+          && isString(request.resource.data.text, 800)
+          && isString(request.resource.data.authorName, 60);
+
+        // El autor puede borrar su propia reseña; admin puede moderar
+        // cualquiera.
+        allow delete: if isSignedIn() && (myUid() == reviewUid || isAdmin());
+      }
+    }
+
+    // --- recommendations/{recId} ---------------------------------------------
+    match /recommendations/{recId} {
+      allow read: if isMember();
+
+      allow create: if isSignedIn()
+        && hasOnlyKeys(['title', 'author', 'genre', 'reason', 'link', 'uid',
+                        'authorName', 'status', 'createdAt'])
+        && request.resource.data.uid == myUid() // no se puede suplantar a otro
+        && isString(request.resource.data.title, 200)
+        && isString(request.resource.data.reason, 500)
+        && request.resource.data.status == 'sugerido';
+
+      // El autor puede editar título/autor/género/motivo/enlace de la suya;
+      // solo admin puede cambiar "status".
+      allow update: if isSignedIn() && (
+        (
+          resource.data.uid == myUid()
+          && hasOnlyKeys(['title', 'author', 'genre', 'reason', 'link', 'uid',
+                          'authorName', 'status', 'createdAt'])
+          && request.resource.data.uid == resource.data.uid
+          && request.resource.data.status == resource.data.status
+          && isString(request.resource.data.title, 200)
+          && isString(request.resource.data.reason, 500)
+        ) || (
+          isAdmin()
+          && hasOnlyKeys(['title', 'author', 'genre', 'reason', 'link', 'uid',
+                          'authorName', 'status', 'createdAt'])
+          && request.resource.data.status in ['sugerido', 'considerado', 'aceptado', 'descartado']
+        )
+      );
+
+      allow delete: if isSignedIn() && (resource.data.uid == myUid() || isAdmin());
+    }
+
+    // --- events/{eventId} ------------------------------------------------------
+    // Lectura: cualquier miembro. Escritura: solo admin.
+    match /events/{eventId} {
+      allow read: if isMember();
+      allow create, update: if isAdmin()
+        && hasOnlyKeys(['title', 'date', 'bookId', 'bookTitle', 'chapters',
+                        'note', 'createdAt'])
+        && isString(request.resource.data.title, 200);
+      allow delete: if isAdmin();
+    }
+
+    // --- settings/general -------------------------------------------------------
+    match /settings/general {
+      allow read: if isMember();
+      allow write: if isAdmin();
+    }
+
+    // Cualquier otra ruta no contemplada: denegada por defecto.
+  }
+}

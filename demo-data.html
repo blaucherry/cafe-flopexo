@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sembrar datos de demostración — Café Flopexo</title>
+<link rel="icon" href="assets/icons/favicon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="css/styles.css" />
+<link rel="stylesheet" href="css/components.css" />
+</head>
+<body class="auth-checking">
+  <div class="session-loader"><div class="deco-steam"></div><p>Verificando permisos…</p></div>
+  <div class="no-profile-message"><h2>No encontramos tu perfil</h2><p>Contacta a la administradora.</p></div>
+
+  <main class="container" style="max-width:560px; padding-block: var(--space-5);">
+    <div class="card" id="admin-only" hidden>
+      <h1>Sembrar datos de demostración</h1>
+      <p>Esta página NO forma parte de la navegación normal y no debe usarse
+      en un club real ya en funcionamiento. Sirve para poblar un proyecto de
+      pruebas con 3 libros ficticios, 4 miembros ficticios, 2
+      recomendaciones y 2 eventos de ejemplo.</p>
+      <p class="hint">Solo visible para el rol admin. Ejecuta esto una sola vez, en un proyecto de Firebase de pruebas, nunca en producción con datos reales.</p>
+      <button class="btn btn--primary" id="seed-btn">Sembrar datos de demostración</button>
+      <p id="result" class="hint" style="margin-top:var(--space-2);"></p>
+    </div>
+  </main>
+
+  <script type="module">
+    import { requireAdmin } from "./js/auth.js";
+    import { seedDemoData } from "./js/demo-data.js";
+    import { initOfflineBanner } from "./js/app.js";
+
+    (async function init() {
+      initOfflineBanner();
+      const session = await requireAdmin();
+      if (!session) return;
+      document.getElementById("admin-only").hidden = false;
+
+      document.getElementById("seed-btn").addEventListener("click", async () => {
+        const btn = document.getElementById("seed-btn");
+        const result = document.getElementById("result");
+        btn.disabled = true;
+        result.textContent = "Sembrando datos…";
+        try {
+          await seedDemoData();
+          result.textContent = "Listo. Revisa biblioteca.html, miembros.html, calendario.html y recomendaciones.html.";
+        } catch (err) {
+          result.textContent = "Error: " + (err.message || "no se pudo sembrar los datos.");
+        } finally {
+          btn.disabled = false;
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

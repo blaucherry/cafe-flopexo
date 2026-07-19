@@ -1,0 +1,45 @@
+/* css/responsive.css
+   Ajustes para tablet y celular. Mobile-first parcial: la base ya es fluida
+   con clamp()/auto-fill, aquí se resuelve la navegación y ajustes de
+   densidad para pantallas pequeñas. */
+
+@media (max-width: 860px) {
+  .grid--books { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+  .container { width: 94%; }
+}
+
+@media (max-width: 720px) {
+  .nav-toggle { display: block; }
+
+  .main-nav__links {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    background: var(--color-cream);
+    border-bottom: 1px solid var(--surface-card-border);
+    padding: var(--space-2);
+    gap: 0.2rem;
+    display: none;
+  }
+  .main-nav__links.is-open { display: flex; }
+
+  .main-nav {
+    position: relative;
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .page-title { flex-direction: column; align-items: flex-start; }
+
+  .toast-container { left: var(--space-2); right: var(--space-2); }
+  .toast { max-width: none; }
+}
+
+@media (max-width: 480px) {
+  h1 { font-size: 1.5rem; }
+  .card { padding: var(--space-2); }
+  .grid--books { grid-template-columns: repeat(2, 1fr); gap: var(--space-2); }
+  .stars--input button { font-size: 1.3rem; }
+}

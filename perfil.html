@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mi perfil — Café Flopexo</title>
+<link rel="icon" href="assets/icons/favicon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="css/styles.css" />
+<link rel="stylesheet" href="css/components.css" />
+<link rel="stylesheet" href="css/responsive.css" />
+</head>
+<body class="auth-checking">
+  <div class="session-loader"><div class="deco-steam"></div><p>Cargando tu perfil…</p></div>
+  <div class="no-profile-message"><h2>No encontramos tu perfil</h2><p>Contacta a la administradora.</p></div>
+
+  <div class="app-shell">
+    <header class="site-header" id="app-header"></header>
+
+    <main class="container" style="max-width:560px;">
+      <div class="page-title"><h1>Mi perfil</h1></div>
+
+      <form id="profile-form" class="card" novalidate>
+        <div id="form-alert" class="form-alert form-alert--success" hidden role="status"></div>
+
+        <div class="field">
+          <label>Correo electrónico</label>
+          <input type="text" id="email-display" disabled />
+          <span class="hint">El correo no se puede editar aquí. Contacta a la administradora si necesitas cambiarlo.</span>
+        </div>
+
+        <div class="field">
+          <label>Rol</label>
+          <input type="text" id="role-display" disabled />
+        </div>
+
+        <div class="field">
+          <label>Avatar</label>
+          <div class="avatar-picker" id="avatar-picker"></div>
+        </div>
+
+        <div class="field">
+          <label for="display-name">Nombre visible</label>
+          <input type="text" id="display-name" maxlength="60" required />
+        </div>
+
+        <div class="field">
+          <label for="bio">Biografía breve</label>
+          <textarea id="bio" maxlength="280"></textarea>
+          <span class="char-counter" id="bio-counter">0 / 280</span>
+        </div>
+
+        <div class="field">
+          <label for="genres">Géneros favoritos (separados por coma)</label>
+          <input type="text" id="genres" placeholder="Ej. Realismo mágico, Poesía, Fantasía" />
+        </div>
+
+        <button type="submit" class="btn btn--primary" id="save-btn">Guardar cambios</button>
+      </form>
+    </main>
+
+    <footer class="site-footer">Café Flopexo · club de lectura privado</footer>
+  </div>
+
+  <script type="module">
+    import { requireAuth, initLogoutButton } from "./js/auth.js";
+    import { renderHeader, AVATAR_IDS, avatarPath, showToast, ROLES, initOfflineBanner,} from "./js/app.js";
+    import { updateOwnProfile, BIO_MAX_LENGTH } from "./js/profiles.js";
+
+    let session, selectedAvatar;
+
+    (async function init() {
+      initOfflineBanner();
+      session = await requireAuth();
+      if (!session) return;
+      renderHeader("perfil.html", session.profile);
+      initLogoutButton();
+
+      const p = session.profile;
+      document.getElementById("email-display").value = session.user.email;
+      document.getElementById("role-display").value = p.role === ROLES.ADMIN ? "Administradora" : "Miembro";
+      document.getElementById("display-name").value = p.displayName || "";
+      document.getElementById("bio").value = p.bio || "";
+      document.getElementById("genres").value = (p.favoriteGenres || []).join(", ");
+      selectedAvatar = p.avatarId || AVATAR_IDS[0];
+
+      renderAvatarPicker();
+      updateBioCounter();
+
+      document.getElementById("bio").addEventListener("input", updateBioCounter);
+      document.getElementById("profile-form").addEventListener("submit", handleSubmit);
+    })();
+
+    function renderAvatarPicker() {
+      const picker = document.getElementById("avatar-picker");
+      picker.innerHTML = AVATAR_IDS.map((id) => `
+        <button type="button" data-avatar="${id}" class="${id === selectedAvatar ? "is-selected" : ""}" aria-label="Seleccionar avatar">
+          <img class="avatar" src="${avatarPath(id)}" alt="" />
+        </button>`).join("");
+      picker.querySelectorAll("button").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          selectedAvatar = btn.dataset.avatar;
+          picker.querySelectorAll("button").forEach((b) => b.classList.toggle("is-selected", b === btn));
+        });
+      });
+    }
+
+    function updateBioCounter() {
+      const bio = document.getElementById("bio");
+      document.getElementById("bio-counter").textContent = `${bio.value.length} / ${BIO_MAX_LENGTH}`;
+    }
+
+    async function handleSubmit(e) {
+      e.preventDefault();
+      const alertBox = document.getElementById("form-alert");
+      alertBox.hidden = true;
+      const btn = document.getElementById("save-btn");
+      btn.disabled = true;
+      btn.textContent = "Guardando…";
+      try {
+        await updateOwnProfile(session.user.uid, {
+          displayName: document.getElementById("display-name").value,
+          bio: document.getElementById("bio").value,
+          favoriteGenres: document.getElementById("genres").value.split(",").map((g) => g.trim()).filter(Boolean),
+          avatarId: selectedAvatar,
+        });
+        showToast("Perfil actualizado.", "success");
+      } catch (err) {
+        showToast(err.message || "No se pudo guardar el perfil.", "error");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Guardar cambios";
+      }
+    }
+  </script>
+</body>
+</html>

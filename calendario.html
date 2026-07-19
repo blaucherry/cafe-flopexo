@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Calendario — Café Flopexo</title>
+<link rel="icon" href="assets/icons/favicon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="css/styles.css" />
+<link rel="stylesheet" href="css/components.css" />
+<link rel="stylesheet" href="css/responsive.css" />
+</head>
+<body class="auth-checking">
+  <div class="session-loader"><div class="deco-steam"></div><p>Revisando la agenda del club…</p></div>
+  <div class="no-profile-message"><h2>No encontramos tu perfil</h2><p>Contacta a la administradora.</p></div>
+
+  <div class="app-shell">
+    <header class="site-header" id="app-header"></header>
+
+    <main class="container">
+      <div class="page-title"><h1>Calendario del club</h1></div>
+
+      <section aria-labelledby="h-next">
+        <h2 id="h-next">Próxima reunión</h2>
+        <div id="next-slot"></div>
+      </section>
+
+      <section aria-labelledby="h-upcoming" style="margin-top: var(--space-4);">
+        <h2 id="h-upcoming">Próximas actividades</h2>
+        <div id="upcoming-slot" class="grid grid--two"></div>
+      </section>
+
+      <section aria-labelledby="h-past" style="margin-top: var(--space-4);">
+        <h2 id="h-past">Reuniones pasadas</h2>
+        <div id="past-slot" class="grid grid--two"></div>
+      </section>
+    </main>
+
+    <footer class="site-footer">Café Flopexo · club de lectura privado</footer>
+  </div>
+
+  <script type="module">
+    import { requireAuth, initLogoutButton } from "./js/auth.js";
+    import { renderHeader, escapeHTML, formatDateTime, showToast, initOfflineBanner,} from "./js/app.js";
+    import { loadEvents, splitEvents, nextEvent } from "./js/calendar.js";
+
+    (async function init() {
+      initOfflineBanner();
+      const session = await requireAuth();
+      if (!session) return;
+      renderHeader("calendario.html", session.profile);
+      initLogoutButton();
+
+      document.getElementById("next-slot").innerHTML = `<div class="skeleton skeleton--line" style="width:60%"></div>`;
+      try {
+        const events = await loadEvents();
+        renderNext(nextEvent(events));
+        const { upcoming, past } = splitEvents(events);
+        renderList("upcoming-slot", upcoming.slice(1), "No hay más actividades programadas por ahora.");
+        renderList("past-slot", past, "Todavía no hay reuniones pasadas.");
+      } catch (err) {
+        showToast("No se pudo cargar el calendario.", "error");
+      }
+    })();
+
+    function renderNext(event) {
+      const slot = document.getElementById("next-slot");
+      if (!event) {
+        slot.innerHTML = `<div class="empty-state card"><div class="empty-state__icon">🗓️</div><p>Aún no hay una reunión programada. La administradora puede agregar una desde el panel.</p></div>`;
+        return;
+      }
+      slot.innerHTML = eventCardHTML(event, true);
+    }
+
+    function renderList(slotId, events, emptyMsg) {
+      const slot = document.getElementById(slotId);
+      if (!events.length) {
+        slot.innerHTML = `<div class="empty-state card" style="grid-column:1/-1;"><div class="empty-state__icon">📭</div><p>${escapeHTML(emptyMsg)}</p></div>`;
+        return;
+      }
+      slot.innerHTML = events.map((e) => eventCardHTML(e, false)).join("");
+    }
+
+    function eventCardHTML(e, featured) {
+      return `
+        <div class="card" style="${featured ? "border-color: var(--color-orange-strong);" : ""}">
+          <p style="color: var(--color-olive); font-weight:700; margin-bottom:0.2rem;">${formatDateTime(e.date)}</p>
+          <h3 style="margin:0;">${escapeHTML(e.title)}</h3>
+          ${e.bookTitle ? `<p>📖 ${escapeHTML(e.bookTitle)}</p>` : ""}
+          ${e.chapters ? `<p><strong>Lectura acordada:</strong> ${escapeHTML(e.chapters)}</p>` : ""}
+          ${e.note ? `<p class="hint">${escapeHTML(e.note)}</p>` : ""}
+        </div>`;
+    }
+  </script>
+</body>
+</html>

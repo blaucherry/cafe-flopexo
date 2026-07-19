@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Administración — Café Flopexo</title>
+<link rel="icon" href="assets/icons/favicon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="css/styles.css" />
+<link rel="stylesheet" href="css/components.css" />
+<link rel="stylesheet" href="css/responsive.css" />
+<style>
+  .admin-tabs { display:flex; gap:0.4rem; flex-wrap:wrap; margin-bottom: var(--space-3); }
+  .admin-tabs button { border:none; background: var(--color-cream-2); padding:0.5rem 1rem; border-radius:999px; cursor:pointer; font-weight:700; color:var(--color-olive); }
+  .admin-tabs button.is-active { background: var(--color-orange-strong); color:#fff; }
+  .admin-panel { display:none; }
+  .admin-panel.is-active { display:block; }
+  .admin-book-row { display:flex; gap: var(--space-2); align-items:center; border-bottom:1px solid var(--surface-card-border); padding: var(--space-2) 0; flex-wrap:wrap; }
+  .admin-book-row img { width:48px; aspect-ratio:2/3; object-fit:cover; border-radius:6px; }
+</style>
+</head>
+<body class="auth-checking">
+  <div class="session-loader"><div class="deco-steam"></div><p>Verificando permisos…</p></div>
+  <div class="no-profile-message"><h2>No encontramos tu perfil</h2><p>Contacta a la administradora.</p></div>
+
+  <div class="app-shell">
+    <header class="site-header" id="app-header"></header>
+
+    <main class="container">
+      <div class="page-title"><h1>Panel de administración</h1></div>
+
+      <div class="admin-tabs" role="tablist">
+        <button data-tab="books" class="is-active" role="tab">Libros</button>
+        <button data-tab="events" role="tab">Calendario</button>
+        <button data-tab="recs" role="tab">Recomendaciones</button>
+        <button data-tab="reviews" role="tab">Reseñas</button>
+      </div>
+
+      <!-- LIBROS -->
+      <section class="admin-panel is-active" id="panel-books">
+        <div class="card" style="margin-bottom: var(--space-3);">
+          <h2 id="book-form-title">Agregar libro</h2>
+          <form id="book-form" novalidate>
+            <input type="hidden" id="book-id" />
+            <div id="book-alert" class="form-alert form-alert--error" hidden role="alert"></div>
+            <div class="grid grid--two">
+              <div class="field"><label for="b-title">Título *</label><input type="text" id="b-title" required /></div>
+              <div class="field"><label for="b-author">Autor *</label><input type="text" id="b-author" required /></div>
+              <div class="field"><label for="b-genre">Género</label><input type="text" id="b-genre" /></div>
+              <div class="field"><label for="b-pages">Número de páginas</label><input type="number" id="b-pages" min="1" /></div>
+              <div class="field"><label for="b-cover">URL de portada</label><input type="url" id="b-cover" placeholder="https://…" /></div>
+              <div class="field">
+                <label for="b-pdf">Ruta del PDF</label>
+                <input type="text" id="b-pdf" placeholder="books/nombre-archivo.pdf" />
+                <span class="hint">Debe existir en /books/ del repositorio. Formato: books/nombre.pdf</span>
+              </div>
+              <div class="field">
+                <label for="b-status">Estado</label>
+                <select id="b-status">
+                  <option value="proximo">Próximo</option>
+                  <option value="leyendo">Leyendo</option>
+                  <option value="terminado">Terminado</option>
+                </select>
+              </div>
+              <div class="field"><label for="b-chapters">Capítulos/páginas asignadas</label><input type="text" id="b-chapters" /></div>
+              <div class="field"><label for="b-start">Fecha de inicio</label><input type="datetime-local" id="b-start" /></div>
+              <div class="field"><label for="b-end">Fecha de finalización</label><input type="datetime-local" id="b-end" /></div>
+            </div>
+            <div class="field"><label for="b-synopsis">Sinopsis</label><textarea id="b-synopsis"></textarea></div>
+            <div style="display:flex; gap: var(--space-2);">
+              <button type="submit" class="btn btn--primary" id="book-submit">Guardar libro</button>
+              <button type="button" class="btn btn--secondary" id="book-cancel-edit" hidden>Cancelar edición</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="card">
+          <h2>Libros existentes</h2>
+          <div id="books-admin-list"></div>
+        </div>
+      </section>
+
+      <!-- CALENDARIO -->
+      <section class="admin-panel" id="panel-events">
+        <div class="card" style="margin-bottom: var(--space-3);">
+          <h2 id="event-form-title">Agregar evento</h2>
+          <form id="event-form" novalidate>
+            <input type="hidden" id="event-id" />
+            <div id="event-alert" class="form-alert form-alert--error" hidden role="alert"></div>
+            <div class="grid grid--two">
+              <div class="field"><label for="e-title">Título</label><input type="text" id="e-title" placeholder="Reunión de club" /></div>
+              <div class="field"><label for="e-date">Fecha y hora *</label><input type="datetime-local" id="e-date" required /></div>
+              <div class="field">
+                <label for="e-book">Libro relacionado</label>
+                <select id="e-book"><option value="">— Ninguno —</option></select>
+              </div>
+              <div class="field"><label for="e-chapters">Capítulos/páginas acordadas</label><input type="text" id="e-chapters" /></div>
+            </div>
+            <div class="field"><label for="e-note">Nota opcional</label><textarea id="e-note"></textarea></div>
+            <div style="display:flex; gap: var(--space-2);">
+              <button type="submit" class="btn btn--primary" id="event-submit">Guardar evento</button>
+              <button type="button" class="btn btn--secondary" id="event-cancel-edit" hidden>Cancelar edición</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="card">
+          <h2>Eventos existentes</h2>
+          <div id="events-admin-list"></div>
+        </div>
+      </section>
+
+      <!-- RECOMENDACIONES -->
+      <section class="admin-panel" id="panel-recs">
+        <div class="card">
+          <h2>Moderar recomendaciones</h2>
+          <div id="recs-admin-list"></div>
+        </div>
+      </section>
+
+      <!-- RESEÑAS -->
+      <section class="admin-panel" id="panel-reviews">
+        <div class="card">
+          <h2>Moderar reseñas</h2>
+          <p class="hint">Selecciona un libro para revisar y, si es necesario, eliminar reseñas inapropiadas.</p>
+          <div class="field" style="max-width:320px;">
+            <label for="review-book-select">Libro</label>
+            <select id="review-book-select"><option value="">— Selecciona —</option></select>
+          </div>
+          <div id="reviews-admin-list"></div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">Café Flopexo · club de lectura privado</footer>
+  </div>
+
+  <div class="modal-backdrop" id="confirm-modal" hidden>
+    <div class="card modal">
+      <h3 id="confirm-title">¿Confirmar acción?</h3>
+      <p id="confirm-body"></p>
+      <div class="modal__actions">
+        <button class="btn btn--secondary" id="confirm-cancel">Cancelar</button>
+        <button class="btn btn--danger" id="confirm-accept">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { requireAdmin, initLogoutButton } from "./js/auth.js";
+    import { renderHeader, escapeHTML, formatDateTime, showToast, initOfflineBanner,} from "./js/app.js";
+    import * as admin from "./js/admin.js";
+    import { loadReviews, deleteReview } from "./js/reviews.js";
+
+    let session, books = [], events = [], recs = [];
+
+    (async function init() {
+      initOfflineBanner();
+      session = await requireAdmin();
+      if (!session) return;
+      renderHeader("admin.html", session.profile);
+      initLogoutButton();
+      initTabs();
+
+      await Promise.all([refreshBooks(), refreshEvents(), refreshRecs()]);
+      populateBookSelects();
+
+      document.getElementById("book-form").addEventListener("submit", handleBookSubmit);
+      document.getElementById("book-cancel-edit").addEventListener("click", resetBookForm);
+      document.getElementById("event-form").addEventListener("submit", handleEventSubmit);
+      document.getElementById("event-cancel-edit").addEventListener("click", resetEventForm);
+      document.getElementById("review-book-select").addEventListener("change", loadReviewsForModeration);
+    })();
+
+    function initTabs() {
+      document.querySelectorAll(".admin-tabs button").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          document.querySelectorAll(".admin-tabs button").forEach((b) => b.classList.remove("is-active"));
+          document.querySelectorAll(".admin-panel").forEach((p) => p.classList.remove("is-active"));
+          btn.classList.add("is-active");
+          document.getElementById(`panel-${btn.dataset.tab}`).classList.add("is-active");
+        });
+      });
+    }
+
+    // --- LIBROS ------------------------------------------------------------
+    async function refreshBooks() {
+      admin.invalidateBooksCache();
+      books = await admin.loadAllBooks({ force: true });
+      renderBooksAdminList();
+    }
+
+    function renderBooksAdminList() {
+      const el = document.getElementById("books-admin-list");
+      if (!books.length) {
+        el.innerHTML = `<div class="empty-state"><p>Todavía no hay libros. Agrega el primero arriba.</p></div>`;
+        return;
+      }
+      el.innerHTML = books.map((b) => `
+        <div class="admin-book-row" data-id="${b.id}">
+          ${b.coverUrl ? `<img src="${escapeHTML(b.coverUrl)}" alt="" />` : `<div class="img-fallback" style="width:48px;aspect-ratio:2/3;">📖</div>`}
+          <div style="flex:1; min-width:160px;">
+            <strong>${escapeHTML(b.title)}</strong> — ${escapeHTML(b.author)}
+            <span class="badge badge--${b.status}">${escapeHTML(b.status)}</span>
+          </div>
+          <button class="btn btn--secondary btn--sm" data-action="edit">Editar</button>
+          <button class="btn btn--secondary btn--sm" data-action="current">Marcar como actual</button>
+          <button class="btn btn--danger btn--sm" data-action="archive">Archivar</button>
+        </div>`).join("");
+
+      el.querySelectorAll("[data-action='edit']").forEach((btn) => btn.addEventListener("click", () => {
+        editBook(books.find((b) => b.id === btn.closest("[data-id]").dataset.id));
+      }));
+      el.querySelectorAll("[data-action='current']").forEach((btn) => btn.addEventListener("click", async () => {
+        const id = btn.closest("[data-id]").dataset.id;
+        try {
+          await admin.setCurrentBook(id);
+          showToast("Libro marcado como actual.", "success");
+          await refreshBooks();
+        } catch (err) { showToast("No se pudo actualizar.", "error"); }
+      }));
+      el.querySelectorAll("[data-action='archive']").forEach((btn) => btn.addEventListener("click", () => {
+        const id = btn.closest("[data-id]").dataset.id;
+        confirmAction("¿Archivar este libro?", "No se eliminará, pero dejará de mostrarse en la biblioteca.", async () => {
+          try {
+            await admin.archiveBook(id, true);
+            showToast("Libro archivado.", "success");
+            await refreshBooks();
+            populateBookSelects();
+          } catch (err) { showToast("No se pudo archivar.", "error"); }
+        });
+      }));
+    }
+
+    function editBook(book) {
+      document.getElementById("book-form-title").textContent = `Editar: ${book.title}`;
+      document.getElementById("book-id").value = book.id;
+      document.getElementById("b-title").value = book.title || "";
+      document.getElementById("b-author").value = book.author || "";
+      document.getElementById("b-genre").value = book.genre || "";
+      document.getElementById("b-pages").value = book.pages || "";
+      document.getElementById("b-cover").value = book.coverUrl || "";
+      document.getElementById("b-pdf").value = book.pdfPath || "";
+      document.getElementById("b-status").value = book.status || "proximo";
+      document.getElementById("b-chapters").value = book.chaptersAssigned || "";
+      document.getElementById("b-synopsis").value = book.synopsis || "";
+      document.getElementById("book-cancel-edit").hidden = false;
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function resetBookForm() {
+      document.getElementById("book-form").reset();
+      document.getElementById("book-id").value = "";
+      document.getElementById("book-form-title").textContent = "Agregar libro";
+      document.getElementById("book-cancel-edit").hidden = true;
+    }
+
+    async function handleBookSubmit(e) {
+      e.preventDefault();
+      const alertBox = document.getElementById("book-alert");
+      alertBox.hidden = true;
+      const id = document.getElementById("book-id").value;
+      const payload = {
+        title: document.getElementById("b-title").value,
+        author: document.getElementById("b-author").value,
+        genre: document.getElementById("b-genre").value,
+        pages: document.getElementById("b-pages").value,
+        coverUrl: document.getElementById("b-cover").value,
+        pdfPath: document.getElementById("b-pdf").value,
+        status: document.getElementById("b-status").value,
+        chaptersAssigned: document.getElementById("b-chapters").value,
+        synopsis: document.getElementById("b-synopsis").value,
+        startDate: document.getElementById("b-start").value || null,
+        endDate: document.getElementById("b-end").value || null,
+      };
+      const btn = document.getElementById("book-submit");
+      btn.disabled = true;
+      try {
+        if (id) await admin.updateBook(id, payload);
+        else await admin.createBook(payload);
+        showToast("Libro guardado.", "success");
+        resetBookForm();
+        await refreshBooks();
+        populateBookSelects();
+      } catch (err) {
+        alertBox.textContent = err.message || "No se pudo guardar el libro.";
+        alertBox.hidden = false;
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    // --- EVENTOS -------------------------------------------------------------
+    async function refreshEvents() {
+      events = await admin.loadEvents();
+      renderEventsAdminList();
+    }
+
+    function populateBookSelects() {
+      const select = document.getElementById("e-book");
+      select.innerHTML = `<option value="">— Ninguno —</option>` +
+        books.map((b) => `<option value="${b.id}">${escapeHTML(b.title)}</option>`).join("");
+
+      const reviewSelect = document.getElementById("review-book-select");
+      reviewSelect.innerHTML = `<option value="">— Selecciona —</option>` +
+        books.map((b) => `<option value="${b.id}">${escapeHTML(b.title)}</option>`).join("");
+    }
+
+    function renderEventsAdminList() {
+      const el = document.getElementById("events-admin-list");
+      if (!events.length) {
+        el.innerHTML = `<div class="empty-state"><p>Sin eventos todavía.</p></div>`;
+        return;
+      }
+      el.innerHTML = events.map((e) => `
+        <div class="admin-book-row" data-id="${e.id}">
+          <div style="flex:1; min-width:160px;">
+            <strong>${escapeHTML(e.title)}</strong><br />
+            <span class="hint">${formatDateTime(e.date)}</span>
+          </div>
+          <button class="btn btn--secondary btn--sm" data-action="edit">Editar</button>
+          <button class="btn btn--danger btn--sm" data-action="delete">Eliminar</button>
+        </div>`).join("");
+
+      el.querySelectorAll("[data-action='edit']").forEach((btn) => btn.addEventListener("click", () => {
+        editEvent(events.find((e) => e.id === btn.closest("[data-id]").dataset.id));
+      }));
+      el.querySelectorAll("[data-action='delete']").forEach((btn) => btn.addEventListener("click", () => {
+        const id = btn.closest("[data-id]").dataset.id;
+        confirmAction("¿Eliminar este evento?", "Esta acción no se puede deshacer.", async () => {
+          try {
+            await admin.deleteEvent(id);
+            showToast("Evento eliminado.", "success");
+            await refreshEvents();
+          } catch (err) { showToast("No se pudo eliminar.", "error"); }
+        });
+      }));
+    }
+
+    function editEvent(ev) {
+      document.getElementById("event-form-title").textContent = `Editar: ${ev.title}`;
+      document.getElementById("event-id").value = ev.id;
+      document.getElementById("e-title").value = ev.title || "";
+      const d = ev.date?.toDate ? ev.date.toDate() : new Date(ev.date);
+      document.getElementById("e-date").value = toDatetimeLocal(d);
+      document.getElementById("e-book").value = ev.bookId || "";
+      document.getElementById("e-chapters").value = ev.chapters || "";
+      document.getElementById("e-note").value = ev.note || "";
+      document.getElementById("event-cancel-edit").hidden = false;
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function resetEventForm() {
+      document.getElementById("event-form").reset();
+      document.getElementById("event-id").value = "";
+      document.getElementById("event-form-title").textContent = "Agregar evento";
+      document.getElementById("event-cancel-edit").hidden = true;
+    }
+
+    function toDatetimeLocal(date) {
+      const pad = (n) => String(n).padStart(2, "0");
+      return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+    }
+
+    async function handleEventSubmit(e) {
+      e.preventDefault();
+      const alertBox = document.getElementById("event-alert");
+      alertBox.hidden = true;
+      const id = document.getElementById("event-id").value;
+      const bookSelect = document.getElementById("e-book");
+      const bookTitle = bookSelect.value ? bookSelect.options[bookSelect.selectedIndex].textContent : "";
+      const payload = {
+        title: document.getElementById("e-title").value || "Reunión de club",
+        dateISO: document.getElementById("e-date").value,
+        bookId: bookSelect.value,
+        bookTitle,
+        chapters: document.getElementById("e-chapters").value,
+        note: document.getElementById("e-note").value,
+      };
+      const btn = document.getElementById("event-submit");
+      btn.disabled = true;
+      try {
+        if (id) await admin.updateEvent(id, payload);
+        else await admin.createEvent(payload);
+        showToast("Evento guardado.", "success");
+        resetEventForm();
+        await refreshEvents();
+      } catch (err) {
+        alertBox.textContent = err.message || "No se pudo guardar el evento.";
+        alertBox.hidden = false;
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    // --- RECOMENDACIONES (moderación) -----------------------------------------
+    async function refreshRecs() {
+      recs = await admin.loadRecommendations();
+      renderRecsAdminList();
+    }
+
+    function renderRecsAdminList() {
+      const el = document.getElementById("recs-admin-list");
+      if (!recs.length) {
+        el.innerHTML = `<div class="empty-state"><p>Sin recomendaciones todavía.</p></div>`;
+        return;
+      }
+      el.innerHTML = recs.map((r) => `
+        <div class="admin-book-row" data-id="${r.id}">
+          <div style="flex:1; min-width:160px;">
+            <strong>${escapeHTML(r.title)}</strong> <span class="hint">de ${escapeHTML(r.authorName)}</span><br />
+            <span class="badge badge--${r.status}">${escapeHTML(r.status)}</span>
+          </div>
+          <button class="btn btn--danger btn--sm" data-action="delete">Eliminar</button>
+        </div>`).join("");
+
+      el.querySelectorAll("[data-action='delete']").forEach((btn) => btn.addEventListener("click", () => {
+        const id = btn.closest("[data-id]").dataset.id;
+        confirmAction("¿Eliminar esta recomendación?", "Esta acción no se puede deshacer.", async () => {
+          try {
+            await admin.deleteRecommendation(id);
+            showToast("Recomendación eliminada.", "success");
+            await refreshRecs();
+          } catch (err) { showToast("No se pudo eliminar.", "error"); }
+        });
+      }));
+    }
+
+    // --- RESEÑAS (moderación) -------------------------------------------------
+    async function loadReviewsForModeration() {
+      const bookId = document.getElementById("review-book-select").value;
+      const el = document.getElementById("reviews-admin-list");
+      if (!bookId) { el.innerHTML = ""; return; }
+      el.innerHTML = `<div class="skeleton skeleton--line"></div>`;
+      try {
+        const reviews = await loadReviews(bookId, { max: 50 });
+        if (!reviews.length) {
+          el.innerHTML = `<div class="empty-state"><p>Este libro no tiene reseñas.</p></div>`;
+          return;
+        }
+        el.innerHTML = reviews.map((r) => `
+          <div class="admin-book-row" data-uid="${r.id}">
+            <div style="flex:1; min-width:160px;">
+              <strong>${escapeHTML(r.authorName)}</strong> — ${"★".repeat(r.rating)}${"☆".repeat(5 - r.rating)}<br />
+              <span class="hint">${escapeHTML((r.text || "").slice(0, 100))}</span>
+            </div>
+            <button class="btn btn--danger btn--sm" data-action="delete">Eliminar</button>
+          </div>`).join("");
+
+        el.querySelectorAll("[data-action='delete']").forEach((btn) => btn.addEventListener("click", () => {
+          const uid = btn.closest("[data-uid]").dataset.uid;
+          confirmAction("¿Eliminar esta reseña?", "Esta acción no se puede deshacer.", async () => {
+            try {
+              await deleteReview(bookId, uid);
+              showToast("Reseña eliminada.", "success");
+              await loadReviewsForModeration();
+              await refreshBooks();
+            } catch (err) { showToast("No se pudo eliminar.", "error"); }
+          });
+        }));
+      } catch (err) {
+        el.innerHTML = `<p>No se pudieron cargar las reseñas.</p>`;
+      }
+    }
+
+    // --- Modal genérico de confirmación ---------------------------------------
+    function confirmAction(title, body, onAccept) {
+      const modal = document.getElementById("confirm-modal");
+      document.getElementById("confirm-title").textContent = title;
+      document.getElementById("confirm-body").textContent = body;
+      modal.hidden = false;
+      const cancel = document.getElementById("confirm-cancel");
+      const accept = document.getElementById("confirm-accept");
+      function close() { modal.hidden = true; cancel.removeEventListener("click", close); accept.removeEventListener("click", handleAccept); }
+      function handleAccept() { close(); onAccept(); }
+      cancel.addEventListener("click", close);
+      accept.addEventListener("click", handleAccept);
+    }
+  </script>
+</body>
+</html>

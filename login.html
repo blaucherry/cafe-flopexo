@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Iniciar sesión — Café Flopexo</title>
+<link rel="icon" href="assets/icons/favicon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="css/styles.css" />
+<link rel="stylesheet" href="css/components.css" />
+<link rel="stylesheet" href="css/responsive.css" />
+</head>
+<body class="login-body">
+  <main class="container" style="max-width:420px; padding-block: var(--space-5);">
+    <div class="card" style="text-align:center;">
+      <div class="deco-steam" style="margin-inline:auto;"></div>
+      <h1>Café Flopexo</h1>
+      <p class="lit-quote">"Un buen libro se disfruta mejor acompañado."</p>
+
+      <form id="login-form" novalidate>
+        <div id="form-alert" class="form-alert form-alert--error" hidden role="alert"></div>
+
+        <div class="field" style="text-align:left;">
+          <label for="email">Correo electrónico</label>
+          <input type="email" id="email" name="email" autocomplete="username" required />
+        </div>
+        <div class="field" style="text-align:left;">
+          <label for="password">Contraseña</label>
+          <input type="password" id="password" name="password" autocomplete="current-password" required />
+        </div>
+
+        <button type="submit" class="btn btn--primary btn--block" id="login-submit">
+          Entrar al club
+        </button>
+      </form>
+
+      <div style="display:flex; align-items:center; gap:0.75rem; margin:1rem 0; color:var(--color-olive); font-size:0.85rem;">
+        <span style="height:1px; background:currentColor; opacity:.25; flex:1;"></span>
+        <span>o</span>
+        <span style="height:1px; background:currentColor; opacity:.25; flex:1;"></span>
+      </div>
+
+      <button type="button" class="btn btn--secondary btn--block" id="google-btn">
+        Continuar con Google
+      </button>
+
+      <button type="button" class="btn btn--ghost btn--block" id="forgot-btn" style="margin-top: var(--space-2);">
+        Olvidé mi contraseña
+      </button>
+
+      <p style="margin-top: var(--space-3); font-size: 0.85rem; color: var(--color-olive);">
+        ¿No tienes cuenta todavía? <strong>Solicita acceso a la administradora</strong> del club;
+        las cuentas se crean manualmente para mantener Café Flopexo como un espacio privado.
+      </p>
+    </div>
+  </main>
+
+  <script type="module">
+    import { loginWithEmail, loginWithGoogle, sendReset } from "./js/auth.js";
+    import { showToast } from "./js/app.js";
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+    import { auth } from "./js/app.js";
+
+    // Si ya hay sesión activa, no tiene sentido mostrar el login.
+    onAuthStateChanged(auth, (user) => {
+      if (user) window.location.replace("index.html");
+    });
+
+    const form = document.getElementById("login-form");
+    const alertBox = document.getElementById("form-alert");
+    const submitBtn = document.getElementById("login-submit");
+    const forgotBtn = document.getElementById("forgot-btn");
+    const googleBtn = document.getElementById("google-btn");
+
+    function showAlert(msg) {
+      alertBox.textContent = msg;
+      alertBox.hidden = false;
+    }
+
+    const ERROR_MESSAGES = {
+      "auth/invalid-email": "El correo no tiene un formato válido.",
+      "auth/invalid-credential": "Correo o contraseña incorrectos.",
+      "auth/wrong-password": "Correo o contraseña incorrectos.",
+      "auth/user-not-found": "No existe una cuenta con ese correo. Solicita acceso a la administradora.",
+      "auth/too-many-requests": "Demasiados intentos. Espera unos minutos e inténtalo de nuevo.",
+      "auth/network-request-failed": "No hay conexión con el servidor. Revisa tu internet.",
+      "auth/popup-closed-by-user": "Se cerró la ventana de Google antes de terminar.",
+      "auth/popup-blocked": "El navegador bloqueó la ventana de Google. Permite ventanas emergentes e intenta de nuevo.",
+    };
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      alertBox.hidden = true;
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+
+      if (!email || !password) {
+        showAlert("Completa correo y contraseña.");
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Entrando…";
+      try {
+        await loginWithEmail(email, password);
+        window.location.href = "index.html";
+      } catch (err) {
+        showAlert(ERROR_MESSAGES[err.code] || "No se pudo iniciar sesión. Intenta de nuevo.");
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Entrar al club";
+      }
+    });
+
+    googleBtn.addEventListener("click", async () => {
+      alertBox.hidden = true;
+      googleBtn.disabled = true;
+      googleBtn.textContent = "Abriendo Google…";
+      try {
+        await loginWithGoogle();
+        window.location.href = "index.html";
+      } catch (err) {
+        showAlert(ERROR_MESSAGES[err.code] || "No se pudo iniciar sesión con Google.");
+        googleBtn.disabled = false;
+        googleBtn.textContent = "Continuar con Google";
+      }
+    });
+
+    forgotBtn.addEventListener("click", async () => {
+      const email = document.getElementById("email").value.trim();
+      if (!email) {
+        showAlert("Escribe tu correo arriba y presiona de nuevo para recibir el enlace de recuperación.");
+        return;
+      }
+      forgotBtn.disabled = true;
+      try {
+        await sendReset(email);
+        showToast("Si el correo existe, se envió un enlace para restablecer tu contraseña.", "success");
+      } catch (err) {
+        showToast(ERROR_MESSAGES[err.code] || "No se pudo enviar el correo de recuperación.", "error");
+      } finally {
+        forgotBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Café Flopexo — Inicio</title>
+<link rel="icon" href="assets/icons/favicon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="css/styles.css" />
+<link rel="stylesheet" href="css/components.css" />
+<link rel="stylesheet" href="css/responsive.css" />
+</head>
+<body class="auth-checking">
+  <div class="session-loader">
+    <div class="deco-steam"></div>
+    <p>Preparando tu mesa en Café Flopexo…</p>
+  </div>
+  <div class="no-profile-message">
+    <h2>No encontramos tu perfil</h2>
+    <p>Tu cuenta de Google existe, pero aún necesita aprobación para entrar al club. Contacta a la administradora.</p>
+    <button type="button" class="btn btn--ghost" id="pending-logout">Cerrar sesión</button>
+  </div>
+
+  <div class="app-shell">
+    <header class="site-header" id="app-header"></header>
+
+    <main class="container">
+      <div class="page-title">
+        <div>
+          <h1 id="greeting">Hola 👋</h1>
+          <p class="lit-quote" id="lit-quote"></p>
+        </div>
+      </div>
+
+      <div class="grid" style="grid-template-columns: 2fr 1fr; align-items:start;">
+        <section aria-labelledby="current-book-heading">
+          <h2 id="current-book-heading">Leyendo ahora</h2>
+          <div id="current-book-slot">
+            <div class="card">
+              <div class="skeleton skeleton--line" style="width:60%"></div>
+              <div class="skeleton skeleton--line" style="width:40%"></div>
+              <div class="skeleton skeleton--line" style="width:90%"></div>
+            </div>
+          </div>
+        </section>
+
+        <aside aria-labelledby="next-meeting-heading">
+          <h2 id="next-meeting-heading">Próxima reunión</h2>
+          <div id="next-meeting-slot">
+            <div class="card">
+              <div class="skeleton skeleton--line" style="width:80%"></div>
+              <div class="skeleton skeleton--line" style="width:50%"></div>
+            </div>
+          </div>
+
+          <div class="card music-card" data-music-card style="margin-top: var(--space-3);">
+            <div class="music-card__header">
+              <h3 style="margin:0;">Música para leer ☕</h3>
+              <button type="button" class="btn btn--secondary btn--sm" data-music-toggle>Mostrar música ☕</button>
+            </div>
+            <div class="music-card__frame" data-music-frame hidden></div>
+            <p class="music-card__fallback" data-music-fallback hidden></p>
+          </div>
+        </aside>
+      </div>
+
+      <section aria-labelledby="reviews-heading" style="margin-top: var(--space-4);">
+        <h2 id="reviews-heading">Últimas reseñas del club</h2>
+        <div id="recent-reviews-slot" class="grid grid--two">
+          <div class="card"><div class="skeleton skeleton--line" style="width:70%"></div></div>
+          <div class="card"><div class="skeleton skeleton--line" style="width:70%"></div></div>
+        </div>
+      </section>
+
+      <section aria-labelledby="recs-heading" style="margin-top: var(--space-4);">
+        <h2 id="recs-heading">Recomendaciones recientes</h2>
+        <div id="recent-recs-slot" class="grid grid--two"></div>
+      </section>
+    </main>
+
+    <footer class="site-footer">Café Flopexo · club de lectura privado</footer>
+  </div>
+
+  <script type="module">
+    import { requireAuth, logout } from "./js/auth.js";
+    import {
+      renderHeader, escapeHTML, formatDateTime, avatarPath,
+      handleImageFallback, showToast, initOfflineBanner,} from "./js/app.js";
+    import { initLogoutButton } from "./js/auth.js";
+    import { loadAllBooks, getCurrentBook, BOOK_STATUS } from "./js/books.js";
+    import { loadReviews } from "./js/reviews.js";
+    import { loadEvents, nextEvent } from "./js/calendar.js";
+    import { loadRecommendations } from "./js/recommendations.js";
+    import { initMusicWidget } from "./js/music.js";
+
+    const QUOTES = [
+      "Leer es viajar sin salir del sillón, con una taza de café en la mano.",
+      "Cada libro terminado es una tarde de otoño bien aprovechada.",
+      "Entre páginas y aroma a café, el tiempo se vuelve amable.",
+    ];
+
+    (async function init() {
+      initOfflineBanner();
+      document.getElementById("pending-logout")?.addEventListener("click", logout);
+      const session = await requireAuth();
+      if (!session) return;
+      const { profile } = session;
+
+      renderHeader("index.html", profile);
+      initLogoutButton();
+      initMusicWidget();
+
+      document.getElementById("greeting").textContent = `Hola, ${escapeHTML(profile.displayName || "amig@ lector")} 👋`;
+      document.getElementById("lit-quote").textContent = QUOTES[Math.floor(Math.random() * QUOTES.length)];
+
+      try {
+        const [books, events, recs] = await Promise.all([
+          loadAllBooks(),
+          loadEvents(),
+          loadRecommendations(),
+        ]);
+
+        renderCurrentBook(await getCurrentBook(books));
+        renderNextMeeting(nextEvent(events));
+        renderRecentRecs(recs.slice(0, 2));
+
+        const current = await getCurrentBook(books);
+        if (current) {
+          const reviews = await loadReviews(current.id, { max: 3 });
+          renderRecentReviews(reviews, current);
+        } else {
+          renderRecentReviews([], null);
+        }
+      } catch (err) {
+        showToast("No se pudo cargar el panel principal. Intenta recargar.", "error");
+      }
+    })();
+
+    function renderCurrentBook(book) {
+      const slot = document.getElementById("current-book-slot");
+      if (!book) {
+        slot.innerHTML = `
+          <div class="empty-state card">
+            <div class="empty-state__icon">📚</div>
+            <p>Todavía no hay un libro en curso. La administradora pronto elegirá el próximo.</p>
+          </div>`;
+        return;
+      }
+      slot.innerHTML = `
+        <div class="card" style="display:flex; gap: var(--space-3); flex-wrap:wrap;">
+          <img class="book-card__cover" style="width:120px;" src="${escapeHTML(book.coverUrl || "")}" alt="Portada de ${escapeHTML(book.title)}" />
+          <div style="flex:1; min-width:200px;">
+            <span class="badge badge--leyendo">Leyendo</span>
+            <h3 style="margin-top:0.4rem;">${escapeHTML(book.title)}</h3>
+            <p class="book-card__author">${escapeHTML(book.author)}</p>
+            <p>${escapeHTML(book.synopsis || "").slice(0, 160)}${(book.synopsis || "").length > 160 ? "…" : ""}</p>
+            ${book.chaptersAssigned ? `<p><strong>Para la próxima sesión:</strong> ${escapeHTML(book.chaptersAssigned)}</p>` : ""}
+            <a class="btn btn--primary" href="libro.html?id=${encodeURIComponent(book.id)}">Continuar leyendo</a>
+          </div>
+        </div>`;
+      const img = slot.querySelector("img");
+      if (img) handleImageFallback(img, "📖");
+    }
+
+    function renderNextMeeting(event) {
+      const slot = document.getElementById("next-meeting-slot");
+      if (!event) {
+        slot.innerHTML = `
+          <div class="empty-state card">
+            <div class="empty-state__icon">🗓️</div>
+            <p>Aún no hay una reunión programada.</p>
+          </div>`;
+        return;
+      }
+      slot.innerHTML = `
+        <div class="card">
+          <p style="color: var(--color-olive); font-weight:700; margin-bottom:0.2rem;">${formatDateTime(event.date)}</p>
+          <h3 style="margin:0;">${escapeHTML(event.title)}</h3>
+          ${event.bookTitle ? `<p>📖 ${escapeHTML(event.bookTitle)}</p>` : ""}
+          ${event.chapters ? `<p>${escapeHTML(event.chapters)}</p>` : ""}
+          ${event.note ? `<p class="hint">${escapeHTML(event.note)}</p>` : ""}
+        </div>`;
+    }
+
+    function renderRecentReviews(reviews, book) {
+      const slot = document.getElementById("recent-reviews-slot");
+      if (!reviews.length) {
+        slot.innerHTML = `<div class="empty-state card" style="grid-column:1/-1;"><div class="empty-state__icon">💬</div><p>Todavía no hay reseñas recientes.</p></div>`;
+        return;
+      }
+      slot.innerHTML = reviews.map((r) => `
+        <div class="card">
+          <div class="review-item__head">
+            <img class="avatar" src="${avatarPath(r.authorAvatar)}" alt="" />
+            <div>
+              <p class="review-item__name">${escapeHTML(r.authorName)}</p>
+              <p class="stars--display" aria-label="${r.rating} de 5 estrellas">${"★".repeat(r.rating)}${"☆".repeat(5 - r.rating)}</p>
+            </div>
+          </div>
+          <p>${escapeHTML((r.text || "").slice(0, 140))}${(r.text || "").length > 140 ? "…" : ""}</p>
+          ${book ? `<a href="libro.html?id=${encodeURIComponent(book.id)}">Ver libro</a>` : ""}
+        </div>`).join("");
+    }
+
+    function renderRecentRecs(recs) {
+      const slot = document.getElementById("recent-recs-slot");
+      if (!recs.length) {
+        slot.innerHTML = `<div class="empty-state card" style="grid-column:1/-1;"><div class="empty-state__icon">✨</div><p>Nadie ha recomendado libros todavía. ¡Sé quien inicie!</p></div>`;
+        return;
+      }
+      slot.innerHTML = recs.map((r) => `
+        <div class="card">
+          <span class="badge badge--${r.status}">${escapeHTML(r.status)}</span>
+          <h3>${escapeHTML(r.title)}</h3>
+          ${r.author ? `<p class="book-card__author">${escapeHTML(r.author)}</p>` : ""}
+          <p>${escapeHTML((r.reason || "").slice(0, 120))}</p>
+        </div>`).join("");
+    }
+  </script>
+</body>
+</html>

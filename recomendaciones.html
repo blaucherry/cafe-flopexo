@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Recomendaciones — Café Flopexo</title>
+<link rel="icon" href="assets/icons/favicon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="css/styles.css" />
+<link rel="stylesheet" href="css/components.css" />
+<link rel="stylesheet" href="css/responsive.css" />
+</head>
+<body class="auth-checking">
+  <div class="session-loader"><div class="deco-steam"></div><p>Buscando ideas para la próxima lectura…</p></div>
+  <div class="no-profile-message"><h2>No encontramos tu perfil</h2><p>Contacta a la administradora.</p></div>
+
+  <div class="app-shell">
+    <header class="site-header" id="app-header"></header>
+
+    <main class="container">
+      <div class="page-title"><h1>Recomendaciones</h1></div>
+
+      <details class="card" style="margin-bottom: var(--space-4);" id="form-details">
+        <summary style="cursor:pointer; font-weight:700; color:var(--color-coffee-red);">Recomendar un libro nuevo</summary>
+        <form id="rec-form" style="margin-top: var(--space-2);" novalidate>
+          <div id="rec-alert" class="form-alert form-alert--error" hidden role="alert"></div>
+          <div class="field">
+            <label for="rec-title">Título *</label>
+            <input type="text" id="rec-title" required />
+          </div>
+          <div class="field">
+            <label for="rec-author">Autor</label>
+            <input type="text" id="rec-author" />
+          </div>
+          <div class="field">
+            <label for="rec-genre">Género</label>
+            <input type="text" id="rec-genre" />
+          </div>
+          <div class="field">
+            <label for="rec-reason">¿Por qué lo recomiendas?</label>
+            <textarea id="rec-reason" maxlength="500"></textarea>
+            <span class="char-counter" id="rec-char-counter">0 / 500</span>
+          </div>
+          <div class="field">
+            <label for="rec-link">Enlace informativo (opcional)</label>
+            <input type="url" id="rec-link" placeholder="https://…" />
+          </div>
+          <button type="submit" class="btn btn--primary" id="rec-submit">Enviar recomendación</button>
+        </form>
+      </details>
+
+      <div class="field" style="max-width:320px;">
+        <label for="rec-search">Buscar</label>
+        <input type="text" id="rec-search" placeholder="Título o autor" />
+      </div>
+
+      <div id="rec-list" class="grid grid--two" style="margin-top: var(--space-3);"></div>
+    </main>
+
+    <footer class="site-footer">Café Flopexo · club de lectura privado</footer>
+  </div>
+
+  <div class="modal-backdrop" id="confirm-modal" hidden>
+    <div class="card modal">
+      <h3>¿Eliminar esta recomendación?</h3>
+      <p>Esta acción no se puede deshacer.</p>
+      <div class="modal__actions">
+        <button class="btn btn--secondary" id="confirm-cancel">Cancelar</button>
+        <button class="btn btn--danger" id="confirm-accept">Eliminar</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { requireAuth, initLogoutButton } from "./js/auth.js";
+    import { renderHeader, escapeHTML, debounce, showToast, initOfflineBanner,} from "./js/app.js";
+    import {
+      loadRecommendations, createRecommendation, updateRecommendation, deleteRecommendation,
+      findDuplicate, filterRecommendations, RECOMMENDATION_STATUS, REASON_MAX_LENGTH,
+    } from "./js/recommendations.js";
+    import { ROLES } from "./js/app.js";
+
+    let session, allRecs = [];
+
+    (async function init() {
+      initOfflineBanner();
+      session = await requireAuth();
+      if (!session) return;
+      renderHeader("recomendaciones.html", session.profile);
+      initLogoutButton();
+
+      document.getElementById("rec-list").innerHTML = `<div class="skeleton skeleton--line"></div>`;
+      try {
+        allRecs = await loadRecommendations();
+        renderList(allRecs);
+      } catch (err) {
+        showToast("No se pudieron cargar las recomendaciones.", "error");
+      }
+
+      document.getElementById("rec-search").addEventListener("input", debounce(() => {
+        renderList(filterRecommendations(allRecs, { search: document.getElementById("rec-search").value }));
+      }, 250));
+
+      const reasonInput = document.getElementById("rec-reason");
+      reasonInput.addEventListener("input", () => {
+        const counter = document.getElementById("rec-char-counter");
+        counter.textContent = `${reasonInput.value.length} / ${REASON_MAX_LENGTH}`;
+      });
+
+      document.getElementById("rec-form").addEventListener("submit", handleSubmit);
+    })();
+
+    async function handleSubmit(e) {
+      e.preventDefault();
+      const alertBox = document.getElementById("rec-alert");
+      alertBox.hidden = true;
+
+      const title = document.getElementById("rec-title").value.trim();
+      const author = document.getElementById("rec-author").value.trim();
+      if (!title) {
+        alertBox.textContent = "El título es obligatorio.";
+        alertBox.hidden = false;
+        return;
+      }
+      const dup = findDuplicate(allRecs, title, author);
+      if (dup) {
+        alertBox.textContent = `"${dup.title}" ya fue recomendado por ${dup.authorName}.`;
+        alertBox.hidden = false;
+        return;
+      }
+
+      const submitBtn = document.getElementById("rec-submit");
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Enviando…";
+      try {
+        await createRecommendation({
+          title, author,
+          genre: document.getElementById("rec-genre").value,
+          reason: document.getElementById("rec-reason").value,
+          link: document.getElementById("rec-link").value,
+          uid: session.user.uid,
+          authorName: session.profile.displayName,
+        });
+        showToast("¡Recomendación enviada!", "success");
+        document.getElementById("rec-form").reset();
+        document.getElementById("form-details").open = false;
+        allRecs = await loadRecommendations();
+        renderList(allRecs);
+      } catch (err) {
+        alertBox.textContent = err.message || "No se pudo enviar la recomendación.";
+        alertBox.hidden = false;
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Enviar recomendación";
+      }
+    }
+
+    function renderList(list) {
+      const el = document.getElementById("rec-list");
+      if (!list.length) {
+        el.innerHTML = `<div class="empty-state card" style="grid-column:1/-1;"><div class="empty-state__icon">💡</div><p>No hay recomendaciones todavía. ¡Anímate a proponer la primera!</p></div>`;
+        return;
+      }
+      const isAdmin = session.profile.role === ROLES.ADMIN;
+      el.innerHTML = list.map((r) => `
+        <div class="card" data-id="${r.id}">
+          <span class="badge badge--${r.status}">${escapeHTML(r.status)}</span>
+          <h3>${escapeHTML(r.title)}</h3>
+          ${r.author ? `<p class="book-card__author">${escapeHTML(r.author)}</p>` : ""}
+          ${r.genre ? `<p class="hint">🏷️ ${escapeHTML(r.genre)}</p>` : ""}
+          <p>${escapeHTML(r.reason || "")}</p>
+          ${r.link ? `<p><a href="${escapeHTML(r.link)}" target="_blank" rel="noopener">Más información ↗</a></p>` : ""}
+          <p class="hint">Sugerido por ${escapeHTML(r.authorName)}</p>
+          <div style="display:flex; gap:0.4rem; margin-top:0.4rem; flex-wrap:wrap;">
+            ${r.uid === session.user.uid ? `<button class="btn btn--secondary btn--sm" data-action="delete">Eliminar</button>` : ""}
+            ${isAdmin ? adminStatusControls(r) : ""}
+          </div>
+        </div>`).join("");
+
+      el.querySelectorAll("[data-action='delete']").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const id = btn.closest("[data-id]").dataset.id;
+          openConfirmModal(async () => {
+            try {
+              await deleteRecommendation(id);
+              showToast("Recomendación eliminada.", "success");
+              allRecs = await loadRecommendations();
+              renderList(allRecs);
+            } catch (err) {
+              showToast("No se pudo eliminar.", "error");
+            }
+          });
+        });
+      });
+
+      el.querySelectorAll("[data-status-select]").forEach((select) => {
+        select.addEventListener("change", async () => {
+          const id = select.closest("[data-id]").dataset.id;
+          try {
+            const { setRecommendationStatus } = await import("./js/recommendations.js");
+            await setRecommendationStatus(id, select.value);
+            showToast("Estado actualizado.", "success");
+            allRecs = await loadRecommendations();
+            renderList(allRecs);
+          } catch (err) {
+            showToast("No se pudo actualizar el estado.", "error");
+          }
+        });
+      });
+    }
+
+    function adminStatusControls(r) {
+      const options = Object.values(RECOMMENDATION_STATUS).map((s) =>
+        `<option value="${s}" ${s === r.status ? "selected" : ""}>${s}</option>`).join("");
+      return `<select data-status-select class="btn btn--sm btn--secondary" style="border-radius:var(--radius-sm);">${options}</select>`;
+    }
+
+    function openConfirmModal(onAccept) {
+      const modal = document.getElementById("confirm-modal");
+      modal.hidden = false;
+      const cancel = document.getElementById("confirm-cancel");
+      const accept = document.getElementById("confirm-accept");
+      function close() { modal.hidden = true; cancel.removeEventListener("click", close); accept.removeEventListener("click", handleAccept); }
+      function handleAccept() { close(); onAccept(); }
+      cancel.addEventListener("click", close);
+      accept.addEventListener("click", handleAccept);
+    }
+  </script>
+</body>
+</html>

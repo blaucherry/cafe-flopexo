@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Miembros — Café Flopexo</title>
+<link rel="icon" href="assets/icons/favicon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="css/styles.css" />
+<link rel="stylesheet" href="css/components.css" />
+<link rel="stylesheet" href="css/responsive.css" />
+</head>
+<body class="auth-checking">
+  <div class="session-loader"><div class="deco-steam"></div><p>Reuniendo a los miembros…</p></div>
+  <div class="no-profile-message"><h2>No encontramos tu perfil</h2><p>Contacta a la administradora.</p></div>
+
+  <div class="app-shell">
+    <header class="site-header" id="app-header"></header>
+
+    <main class="container">
+      <div class="page-title"><h1>Miembros del club</h1></div>
+      <div id="members-slot" class="grid grid--two"></div>
+    </main>
+
+    <footer class="site-footer">Café Flopexo · club de lectura privado</footer>
+  </div>
+
+  <script type="module">
+    import { requireAuth, initLogoutButton } from "./js/auth.js";
+    import { renderHeader, escapeHTML, avatarPath, formatDate, showToast, initOfflineBanner,} from "./js/app.js";
+    import { loadMembers } from "./js/profiles.js";
+
+    (async function init() {
+      initOfflineBanner();
+      const session = await requireAuth();
+      if (!session) return;
+      renderHeader("miembros.html", session.profile);
+      initLogoutButton();
+
+      const slot = document.getElementById("members-slot");
+      slot.innerHTML = Array.from({ length: 4 }).map(() =>
+        `<div class="card"><div class="skeleton skeleton--line" style="width:50%"></div></div>`).join("");
+
+      try {
+        const members = await loadMembers();
+        renderMembers(members);
+      } catch (err) {
+        showToast("No se pudo cargar el directorio.", "error");
+      }
+    })();
+
+    function renderMembers(members) {
+      const slot = document.getElementById("members-slot");
+      if (!members.length) {
+        slot.innerHTML = `<div class="empty-state card" style="grid-column:1/-1;"><p>Sin miembros registrados todavía.</p></div>`;
+        return;
+      }
+      slot.innerHTML = members.map((m) => `
+        <div class="card" style="display:flex; gap: var(--space-2);">
+          <img class="avatar avatar--lg" src="${avatarPath(m.avatarId)}" alt="" />
+          <div>
+            <h3 style="margin:0;">${escapeHTML(m.displayName || "Miembro")}</h3>
+            ${m.role === "admin" ? `<span class="badge" style="background:var(--color-coffee-red); color:#fff;">Administradora</span>` : ""}
+            <p>${escapeHTML(m.bio || "Sin biografía todavía.")}</p>
+            ${m.favoriteGenres?.length ? `<p class="hint">📚 ${m.favoriteGenres.map(escapeHTML).join(", ")}</p>` : ""}
+            <p class="hint">Miembro desde ${formatDate(m.joinedAt)} · ${m.reviewCount || 0} reseña${(m.reviewCount || 0) === 1 ? "" : "s"}</p>
+          </div>
+        </div>`).join("");
+    }
+  </script>
+</body>
+</html>

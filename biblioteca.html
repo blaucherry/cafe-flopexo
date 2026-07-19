@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Biblioteca — Café Flopexo</title>
+<link rel="icon" href="assets/icons/favicon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="css/styles.css" />
+<link rel="stylesheet" href="css/components.css" />
+<link rel="stylesheet" href="css/responsive.css" />
+</head>
+<body class="auth-checking">
+  <div class="session-loader"><div class="deco-steam"></div><p>Cargando la estantería…</p></div>
+  <div class="no-profile-message"><h2>No encontramos tu perfil</h2><p>Contacta a la administradora.</p></div>
+
+  <div class="app-shell">
+    <header class="site-header" id="app-header"></header>
+
+    <main class="container">
+      <div class="page-title">
+        <h1>Biblioteca</h1>
+      </div>
+
+      <form id="filters-form" class="card" style="display:flex; gap: var(--space-2); flex-wrap:wrap; align-items:flex-end; margin-bottom: var(--space-4);">
+        <div class="field" style="flex:2; min-width:200px; margin-bottom:0;">
+          <label for="search">Buscar por título o autor</label>
+          <input type="text" id="search" placeholder="Ej. Cien años de soledad" />
+        </div>
+        <div class="field" style="margin-bottom:0;">
+          <label for="filter-status">Estado</label>
+          <select id="filter-status">
+            <option value="">Todos</option>
+            <option value="leyendo">Leyendo</option>
+            <option value="proximo">Próximo</option>
+            <option value="terminado">Terminado</option>
+          </select>
+        </div>
+        <div class="field" style="margin-bottom:0;">
+          <label for="filter-genre">Género</label>
+          <select id="filter-genre"><option value="">Todos</option></select>
+        </div>
+      </form>
+
+      <section aria-labelledby="h-current">
+        <h2 id="h-current">📖 Leyendo actualmente</h2>
+        <div id="current-slot" class="grid grid--books"></div>
+      </section>
+
+      <section aria-labelledby="h-upcoming" style="margin-top: var(--space-4);">
+        <h2 id="h-upcoming">🔜 Próximas lecturas</h2>
+        <div id="upcoming-slot" class="grid grid--books"></div>
+      </section>
+
+      <section aria-labelledby="h-finished" style="margin-top: var(--space-4);">
+        <h2 id="h-finished">✅ Terminados</h2>
+        <div id="finished-slot" class="grid grid--books"></div>
+      </section>
+    </main>
+
+    <footer class="site-footer">Café Flopexo · club de lectura privado</footer>
+  </div>
+
+  <script type="module">
+    import { requireAuth, initLogoutButton } from "./js/auth.js";
+    import { renderHeader, escapeHTML, debounce, handleImageFallback, showToast, initOfflineBanner,} from "./js/app.js";
+    import { loadAllBooks, filterBooks, groupByStatus } from "./js/books.js";
+
+    let allBooks = [];
+
+    (async function init() {
+      initOfflineBanner();
+      const session = await requireAuth();
+      if (!session) return;
+      renderHeader("biblioteca.html", session.profile);
+      initLogoutButton();
+
+      showSkeletons();
+      try {
+        allBooks = await loadAllBooks();
+        populateGenreFilter(allBooks);
+        applyFilters();
+      } catch (err) {
+        showToast("No se pudo cargar la biblioteca.", "error");
+      }
+
+      document.getElementById("search").addEventListener("input", debounce(applyFilters, 250));
+      document.getElementById("filter-status").addEventListener("change", applyFilters);
+      document.getElementById("filter-genre").addEventListener("change", applyFilters);
+    })();
+
+    function showSkeletons() {
+      for (const id of ["current-slot", "upcoming-slot", "finished-slot"]) {
+        document.getElementById(id).innerHTML = Array.from({ length: 3 }).map(() =>
+          `<div class="card"><div class="skeleton skeleton--cover"></div><div class="skeleton skeleton--line" style="margin-top:8px;"></div></div>`
+        ).join("");
+      }
+    }
+
+    function populateGenreFilter(books) {
+      const genres = [...new Set(books.map((b) => b.genre).filter(Boolean))].sort();
+      const select = document.getElementById("filter-genre");
+      for (const g of genres) {
+        const opt = document.createElement("option");
+        opt.value = g; opt.textContent = g;
+        select.appendChild(opt);
+      }
+    }
+
+    function applyFilters() {
+      const search = document.getElementById("search").value;
+      const status = document.getElementById("filter-status").value;
+      const genre = document.getElementById("filter-genre").value;
+      const filtered = filterBooks(allBooks, { search, status, genre });
+      const { current, upcoming, finished } = groupByStatus(filtered);
+      renderSection("current-slot", current, "Sin libros en curso que coincidan con tu búsqueda.");
+      renderSection("upcoming-slot", upcoming, "Sin próximas lecturas registradas todavía.");
+      renderSection("finished-slot", finished, "Aún no hay libros terminados.");
+    }
+
+    function renderSection(slotId, books, emptyMsg) {
+      const slot = document.getElementById(slotId);
+      if (!books.length) {
+        slot.innerHTML = `<div class="empty-state card" style="grid-column:1/-1;"><div class="empty-state__icon">📕</div><p>${escapeHTML(emptyMsg)}</p></div>`;
+        return;
+      }
+      slot.innerHTML = books.map(bookCardHTML).join("");
+      slot.querySelectorAll("img.book-card__cover").forEach((img) => handleImageFallback(img, "📖"));
+    }
+
+    function bookCardHTML(b) {
+      return `
+        <a class="card card--interactive book-card" href="libro.html?id=${encodeURIComponent(b.id)}">
+          ${b.coverUrl
+            ? `<img class="book-card__cover" src="${escapeHTML(b.coverUrl)}" alt="Portada de ${escapeHTML(b.title)}" loading="lazy" />`
+            : `<div class="img-fallback">📖</div>`}
+          <h3 class="book-card__title">${escapeHTML(b.title)}</h3>
+          <p class="book-card__author">${escapeHTML(b.author)}</p>
+          <div class="book-card__meta">
+            ${b.genre ? `<span class="badge" style="background:var(--color-cream-2); color:var(--color-olive);">${escapeHTML(b.genre)}</span>` : ""}
+            ${b.reviewCount ? `<span class="stars--display">★ ${b.avgRating?.toFixed(1) || "0.0"} (${b.reviewCount})</span>` : `<span class="hint">Sin reseñas aún</span>`}
+          </div>
+        </a>`;
+    }
+  </script>
+</body>
+</html>

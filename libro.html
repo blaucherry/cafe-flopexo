@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Libro — Café Flopexo</title>
+<link rel="icon" href="assets/icons/favicon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="css/styles.css" />
+<link rel="stylesheet" href="css/components.css" />
+<link rel="stylesheet" href="css/responsive.css" />
+<style>
+  .pdf-toolbar { display:flex; align-items:center; gap: var(--space-1); flex-wrap:wrap; padding: var(--space-2); background: var(--color-cream-2); border-radius: var(--radius-md) var(--radius-md) 0 0; }
+  .pdf-toolbar input[type="number"] { width: 64px; padding: 0.3rem; border-radius: var(--radius-sm); border:1px solid var(--surface-card-border); }
+  .pdf-canvas-wrap { background:#e9e2d3; overflow:auto; max-height:75vh; display:flex; justify-content:center; padding: var(--space-2); border-radius: 0 0 var(--radius-md) var(--radius-md); }
+  #pdf-canvas { box-shadow: var(--shadow-soft); background:#fff; }
+</style>
+</head>
+<body class="auth-checking">
+  <div class="session-loader"><div class="deco-steam"></div><p>Abriendo tu ejemplar…</p></div>
+  <div class="no-profile-message"><h2>No encontramos tu perfil</h2><p>Contacta a la administradora.</p></div>
+
+  <div class="app-shell">
+    <header class="site-header" id="app-header"></header>
+
+    <main class="container">
+      <div id="book-not-found" class="empty-state card" hidden>
+        <div class="empty-state__icon">🔍</div>
+        <p>No encontramos ese libro. Puede que haya sido retirado por la administradora.</p>
+        <a class="btn btn--secondary" href="biblioteca.html">Volver a la biblioteca</a>
+      </div>
+
+      <div id="book-content" hidden>
+        <div class="grid" style="grid-template-columns: 200px 1fr; gap: var(--space-3); align-items:start;">
+          <div id="cover-slot"></div>
+          <div>
+            <span class="badge" id="status-badge"></span>
+            <h1 id="book-title" style="margin-top:0.3rem;"></h1>
+            <p class="book-card__author" id="book-author"></p>
+            <p id="book-synopsis"></p>
+            <div id="book-meta" style="display:flex; gap: var(--space-3); flex-wrap:wrap; font-size:0.9rem; color:var(--color-olive);"></div>
+            <div style="margin-top:var(--space-2); display:flex; align-items:center; gap:0.6rem;">
+              <span class="stars--display" id="avg-stars"></span>
+              <span id="avg-text" class="hint"></span>
+            </div>
+          </div>
+        </div>
+
+        <section style="margin-top: var(--space-4);" aria-labelledby="h-reader">
+          <h2 id="h-reader">Lector</h2>
+          <div id="reader-slot" class="card" style="padding:0; overflow:hidden;"></div>
+        </section>
+
+        <section style="margin-top: var(--space-4);" aria-labelledby="h-reviews">
+          <h2 id="h-reviews">Reseñas y conversación</h2>
+
+          <div class="card" style="margin-bottom: var(--space-3);">
+            <div class="star-bar-list" id="star-distribution"></div>
+          </div>
+
+          <div class="card" id="my-review-card">
+            <h3>Tu calificación</h3>
+            <div class="stars stars--input" id="rating-input" role="radiogroup" aria-label="Calificación de 1 a 5 estrellas">
+              <button type="button" data-value="1" aria-label="1 estrella">★</button>
+              <button type="button" data-value="2" aria-label="2 estrellas">★</button>
+              <button type="button" data-value="3" aria-label="3 estrellas">★</button>
+              <button type="button" data-value="4" aria-label="4 estrellas">★</button>
+              <button type="button" data-value="5" aria-label="5 estrellas">★</button>
+            </div>
+            <div class="field">
+              <label for="review-text">Tu reseña</label>
+              <textarea id="review-text" maxlength="800" placeholder="¿Qué te pareció el libro?"></textarea>
+              <span class="char-counter" id="char-counter">0 / 800</span>
+            </div>
+            <div style="display:flex; gap: var(--space-2);">
+              <button class="btn btn--primary" id="save-review-btn">Guardar reseña</button>
+              <button class="btn btn--danger" id="delete-review-btn" hidden>Eliminar mi reseña</button>
+            </div>
+          </div>
+
+          <div id="reviews-list" style="margin-top: var(--space-3);"></div>
+        </section>
+      </div>
+    </main>
+
+    <footer class="site-footer">Café Flopexo · club de lectura privado</footer>
+  </div>
+
+  <!-- Modal de confirmación de eliminación -->
+  <div class="modal-backdrop" id="confirm-modal" hidden>
+    <div class="card modal">
+      <h3>¿Eliminar tu reseña?</h3>
+      <p>Esta acción no se puede deshacer.</p>
+      <div class="modal__actions">
+        <button class="btn btn--secondary" id="confirm-cancel">Cancelar</button>
+        <button class="btn btn--danger" id="confirm-accept">Eliminar</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { requireAuth, initLogoutButton } from "./js/auth.js";
+    import {
+      renderHeader, escapeHTML, avatarPath, handleImageFallback, showToast, formatDateTime, initOfflineBanner,} from "./js/app.js";
+    import { getBook, isValidPdfPath } from "./js/books.js";
+    import {
+      loadReviews, getMyReview, upsertReview, deleteReview, starDistribution,
+      REVIEW_TEXT_MAX_LENGTH,
+    } from "./js/reviews.js";
+
+    const params = new URLSearchParams(window.location.search);
+    const bookId = params.get("id");
+
+    let session, book, myRating = 0;
+
+    (async function init() {
+      initOfflineBanner();
+      session = await requireAuth();
+      if (!session) return;
+      renderHeader("biblioteca.html", session.profile);
+      initLogoutButton();
+
+      if (!bookId) {
+        showNotFound();
+        return;
+      }
+
+      try {
+        book = await getBook(bookId);
+      } catch (err) {
+        showToast("Error al cargar el libro.", "error");
+      }
+
+      if (!book) {
+        showNotFound();
+        return;
+      }
+
+      renderBook(book);
+      initReader(book);
+      await loadReviewsSection();
+      initReviewForm();
+    })();
+
+    function showNotFound() {
+      document.getElementById("book-not-found").hidden = false;
+    }
+
+    function renderBook(b) {
+      document.getElementById("book-content").hidden = false;
+      const coverSlot = document.getElementById("cover-slot");
+      coverSlot.innerHTML = b.coverUrl
+        ? `<img class="book-card__cover" src="${escapeHTML(b.coverUrl)}" alt="Portada de ${escapeHTML(b.title)}" />`
+        : `<div class="img-fallback">📖</div>`;
+      const img = coverSlot.querySelector("img");
+      if (img) handleImageFallback(img, "📖");
+
+      const statusLabels = { leyendo: "Leyendo", proximo: "Próximo", terminado: "Terminado" };
+      const badge = document.getElementById("status-badge");
+      badge.textContent = statusLabels[b.status] || b.status;
+      badge.className = `badge badge--${b.status}`;
+
+      document.getElementById("book-title").textContent = b.title;
+      document.getElementById("book-author").textContent = b.author;
+      document.getElementById("book-synopsis").textContent = b.synopsis || "";
+
+      const meta = document.getElementById("book-meta");
+      meta.innerHTML = `
+        ${b.genre ? `<span>🏷️ ${escapeHTML(b.genre)}</span>` : ""}
+        ${b.pages ? `<span>📄 ${b.pages} páginas</span>` : ""}
+        ${b.startDate ? `<span>Inicio: ${formatDateTime(b.startDate)}</span>` : ""}
+        ${b.endDate ? `<span>Fin: ${formatDateTime(b.endDate)}</span>` : ""}
+      `;
+
+      document.getElementById("avg-stars").textContent =
+        "★".repeat(Math.round(b.avgRating || 0)) + "☆".repeat(5 - Math.round(b.avgRating || 0));
+      document.getElementById("avg-text").textContent =
+        b.reviewCount ? `${(b.avgRating || 0).toFixed(1)} de 5 (${b.reviewCount} reseña${b.reviewCount === 1 ? "" : "s"})` : "Sin calificaciones todavía";
+    }
+
+    // --- Lector PDF.js -----------------------------------------------------
+    function initReader(b) {
+      const slot = document.getElementById("reader-slot");
+      if (!b.pdfPath || !isValidPdfPath(b.pdfPath)) {
+        slot.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state__icon">📄</div>
+            <p>Este libro todavía no tiene un PDF disponible.</p>
+          </div>`;
+        return;
+      }
+
+      slot.innerHTML = `
+        <div class="pdf-toolbar">
+          <button class="btn btn--secondary btn--sm" id="prev-page">‹ Anterior</button>
+          <span>Página
+            <input type="number" id="page-num" min="1" value="1" />
+            / <span id="page-count">–</span>
+          </span>
+          <button class="btn btn--secondary btn--sm" id="next-page">Siguiente ›</button>
+          <button class="btn btn--secondary btn--sm" id="zoom-out">－</button>
+          <span id="zoom-level">100%</span>
+          <button class="btn btn--secondary btn--sm" id="zoom-in">＋</button>
+          <button class="btn btn--secondary btn--sm" id="fullscreen-btn">⛶ Pantalla completa</button>
+          <a class="btn btn--ghost btn--sm" id="open-tab" href="${escapeHTML(b.pdfPath)}" target="_blank" rel="noopener">Abrir en otra pestaña</a>
+        </div>
+        <div class="pdf-canvas-wrap" id="pdf-canvas-wrap">
+          <p id="pdf-status">Cargando PDF…</p>
+          <canvas id="pdf-canvas" hidden></canvas>
+        </div>`;
+
+      loadPdfJs().then(() => setupPdfViewer(b.pdfPath)).catch(() => {
+        document.getElementById("pdf-status").textContent =
+          "No se pudo cargar el lector de PDF. Usa el botón 'Abrir en otra pestaña'.";
+      });
+    }
+
+    function loadPdfJs() {
+      return new Promise((resolve, reject) => {
+        if (window.pdfjsLib) return resolve();
+        const script = document.createElement("script");
+        script.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+        script.onload = () => {
+          window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+            "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+          resolve();
+        };
+        script.onerror = reject;
+        document.head.appendChild(script);
+      });
+    }
+
+    async function setupPdfViewer(pdfPath) {
+      const statusEl = document.getElementById("pdf-status");
+      const canvas = document.getElementById("pdf-canvas");
+      const ctx = canvas.getContext("2d");
+      let pdfDoc = null, currentPage = 1, scale = 1.0;
+
+      try {
+        pdfDoc = await window.pdfjsLib.getDocument(pdfPath).promise;
+      } catch (err) {
+        statusEl.textContent = "No se encontró el archivo PDF de este libro. Usa 'Abrir en otra pestaña' o avisa a la administradora.";
+        return;
+      }
+
+      document.getElementById("page-count").textContent = pdfDoc.numPages;
+      statusEl.hidden = true;
+      canvas.hidden = false;
+
+      async function renderPage(num) {
+        const page = await pdfDoc.getPage(num);
+        const viewport = page.getViewport({ scale });
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        await page.render({ canvasContext: ctx, viewport }).promise;
+        document.getElementById("page-num").value = num;
+      }
+
+      document.getElementById("prev-page").addEventListener("click", () => {
+        if (currentPage <= 1) return;
+        currentPage--; renderPage(currentPage);
+      });
+      document.getElementById("next-page").addEventListener("click", () => {
+        if (currentPage >= pdfDoc.numPages) return;
+        currentPage++; renderPage(currentPage);
+      });
+      document.getElementById("page-num").addEventListener("change", (e) => {
+        let n = parseInt(e.target.value, 10);
+        if (isNaN(n) || n < 1) n = 1;
+        if (n > pdfDoc.numPages) n = pdfDoc.numPages;
+        currentPage = n; renderPage(currentPage);
+      });
+      document.getElementById("zoom-in").addEventListener("click", () => {
+        scale = Math.min(scale + 0.2, 3);
+        document.getElementById("zoom-level").textContent = Math.round(scale * 100) + "%";
+        renderPage(currentPage);
+      });
+      document.getElementById("zoom-out").addEventListener("click", () => {
+        scale = Math.max(scale - 0.2, 0.4);
+        document.getElementById("zoom-level").textContent = Math.round(scale * 100) + "%";
+        renderPage(currentPage);
+      });
+      document.getElementById("fullscreen-btn").addEventListener("click", () => {
+        const wrap = document.getElementById("pdf-canvas-wrap");
+        if (wrap.requestFullscreen) wrap.requestFullscreen();
+      });
+
+      renderPage(currentPage);
+    }
+
+    // --- Reseñas -------------------------------------------------------------
+    async function loadReviewsSection() {
+      const listEl = document.getElementById("reviews-list");
+      listEl.innerHTML = `<div class="skeleton skeleton--line" style="width:80%"></div>`;
+
+      try {
+        const [reviews, mine] = await Promise.all([
+          loadReviews(book.id, { max: 30 }),
+          getMyReview(book.id, session.user.uid),
+        ]);
+
+        renderStarDistribution(starDistribution(reviews));
+        renderReviewsList(reviews);
+        prefillMyReview(mine);
+      } catch (err) {
+        listEl.innerHTML = `<p>No se pudieron cargar las reseñas.</p>`;
+      }
+    }
+
+    function renderStarDistribution(dist) {
+      const total = Object.values(dist).reduce((a, b) => a + b, 0) || 1;
+      const el = document.getElementById("star-distribution");
+      el.innerHTML = [5, 4, 3, 2, 1].map((star) => `
+        <div class="star-bar-row">
+          <span>${star} ★</span>
+          <div class="star-bar"><div class="star-bar__fill" style="width:${(dist[star] / total) * 100}%"></div></div>
+          <span>${dist[star]}</span>
+        </div>`).join("");
+    }
+
+    function renderReviewsList(reviews) {
+      const listEl = document.getElementById("reviews-list");
+      if (!reviews.length) {
+        listEl.innerHTML = `<div class="empty-state"><div class="empty-state__icon">💬</div><p>Sé el primero en dejar una reseña.</p></div>`;
+        return;
+      }
+      listEl.innerHTML = reviews.map((r) => `
+        <div class="review-item">
+          <div class="review-item__head">
+            <img class="avatar" src="${avatarPath(r.authorAvatar)}" alt="" />
+            <div>
+              <p class="review-item__name">${escapeHTML(r.authorName)}</p>
+              <p class="review-item__date">${formatDateTime(r.createdAt)}</p>
+            </div>
+            <div class="stars--display" style="margin-left:auto;">${"★".repeat(r.rating)}${"☆".repeat(5 - r.rating)}</div>
+          </div>
+          <p>${escapeHTML(r.text || "")}</p>
+        </div>`).join("");
+    }
+
+    function prefillMyReview(mine) {
+      if (!mine) return;
+      myRating = mine.rating;
+      updateStarButtons();
+      document.getElementById("review-text").value = mine.text || "";
+      updateCharCounter();
+      document.getElementById("delete-review-btn").hidden = false;
+    }
+
+    function initReviewForm() {
+      const buttons = document.querySelectorAll("#rating-input button");
+      buttons.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          myRating = Number(btn.dataset.value);
+          updateStarButtons();
+        });
+      });
+
+      const textarea = document.getElementById("review-text");
+      textarea.addEventListener("input", updateCharCounter);
+
+      document.getElementById("save-review-btn").addEventListener("click", async () => {
+        if (!myRating) {
+          showToast("Selecciona una calificación de 1 a 5 estrellas.", "error");
+          return;
+        }
+        const btn = document.getElementById("save-review-btn");
+        btn.disabled = true;
+        try {
+          await upsertReview(book.id, session.user.uid, {
+            rating: myRating,
+            text: textarea.value,
+            authorName: session.profile.displayName,
+            authorAvatar: session.profile.avatarId,
+          });
+          showToast("Reseña guardada.", "success");
+          document.getElementById("delete-review-btn").hidden = false;
+          book = await getBook(book.id);
+          renderBook(book);
+          await loadReviewsSection();
+        } catch (err) {
+          showToast(err.message || "No se pudo guardar la reseña.", "error");
+        } finally {
+          btn.disabled = false;
+        }
+      });
+
+      document.getElementById("delete-review-btn").addEventListener("click", () => {
+        openConfirmModal(async () => {
+          try {
+            await deleteReview(book.id, session.user.uid);
+            showToast("Reseña eliminada.", "success");
+            myRating = 0;
+            updateStarButtons();
+            textarea.value = "";
+            updateCharCounter();
+            document.getElementById("delete-review-btn").hidden = true;
+            book = await getBook(book.id);
+            renderBook(book);
+            await loadReviewsSection();
+          } catch (err) {
+            showToast("No se pudo eliminar la reseña.", "error");
+          }
+        });
+      });
+    }
+
+    function updateStarButtons() {
+      document.querySelectorAll("#rating-input button").forEach((btn) => {
+        btn.classList.toggle("is-filled", Number(btn.dataset.value) <= myRating);
+        btn.setAttribute("aria-pressed", String(Number(btn.dataset.value) <= myRating));
+      });
+    }
+
+    function updateCharCounter() {
+      const textarea = document.getElementById("review-text");
+      const counter = document.getElementById("char-counter");
+      const len = textarea.value.length;
+      counter.textContent = `${len} / ${REVIEW_TEXT_MAX_LENGTH}`;
+      counter.classList.toggle("is-near-limit", len > REVIEW_TEXT_MAX_LENGTH * 0.9);
+    }
+
+    // --- Modal de confirmación ------------------------------------------------
+    function openConfirmModal(onAccept) {
+      const modal = document.getElementById("confirm-modal");
+      modal.hidden = false;
+      const cancel = document.getElementById("confirm-cancel");
+      const accept = document.getElementById("confirm-accept");
+      function close() { modal.hidden = true; cancel.removeEventListener("click", close); accept.removeEventListener("click", handleAccept); }
+      function handleAccept() { close(); onAccept(); }
+      cancel.addEventListener("click", close);
+      accept.addEventListener("click", handleAccept);
+    }
+  </script>
+</body>
+</html>
