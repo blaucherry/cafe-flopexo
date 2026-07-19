@@ -18,7 +18,7 @@ import {
   sendPasswordResetEmail,
   onAuthStateChanged,
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
-import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+import { doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 import { auth, db, ROLES } from "./app.js";
 
 let cachedProfile = null;
@@ -51,6 +51,24 @@ export function clearProfileCache() {
   cachedUid = null;
 }
 
+async function createMemberProfile(user) {
+  const displayName = (user.displayName || user.email?.split("@")[0] || "Miembro")
+    .trim()
+    .slice(0, 60);
+  await setDoc(doc(db, "users", user.uid), {
+    displayName,
+    email: user.email || "",
+    role: ROLES.MEMBER,
+    bio: "",
+    favoriteGenres: [],
+    avatarId: "avatar-1.svg",
+    joinedAt: serverTimestamp(),
+    reviewCount: 0,
+  });
+  clearProfileCache();
+  return getUserProfile(user.uid);
+}
+
 /**
  * Protege una página privada. Mantiene <body> con la clase "auth-checking"
  * (definida en CSS para ocultar el contenido) hasta resolver la sesión.
@@ -63,10 +81,12 @@ export async function requireAuth() {
     window.location.replace("login.html");
     return null;
   }
-  const profile = await getUserProfile(user.uid);
-  if (!profile) {
-    // Existe en Authentication pero no tiene documento en Firestore:
-    // no debería ocurrir en uso normal, pero se maneja con seguridad.
+  let profile;
+  try {
+    profile = await getUserProfile(user.uid);
+    if (!profile) profile = await createMemberProfile(user);
+  } catch (error) {
+    console.error("No se pudo cargar o crear el perfil:", error);
     document.body.classList.remove("auth-checking");
     document.body.classList.add("auth-no-profile");
     return null;
