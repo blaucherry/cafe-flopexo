@@ -63,7 +63,7 @@
 
   <script type="module">
     import { requireAuth, initLogoutButton } from "./js/auth.js";
-    import { renderHeader, AVATAR_IDS, avatarPath, showToast, ROLES, initOfflineBanner,} from "./js/app.js";
+    import { renderHeader, AVATAR_IDS, AVATAR_NAMES, avatarPath, showToast, ROLES, initOfflineBanner,} from "./js/app.js";
     import { updateOwnProfile, BIO_MAX_LENGTH } from "./js/profiles.js";
 
     let session, selectedAvatar;
@@ -81,7 +81,7 @@
       document.getElementById("display-name").value = p.displayName || "";
       document.getElementById("bio").value = p.bio || "";
       document.getElementById("genres").value = (p.favoriteGenres || []).join(", ");
-      selectedAvatar = p.avatarId || AVATAR_IDS[0];
+      selectedAvatar = AVATAR_IDS.includes(p.avatarId) ? p.avatarId : AVATAR_IDS[0];
 
       renderAvatarPicker();
       updateBioCounter();
@@ -93,8 +93,9 @@
     function renderAvatarPicker() {
       const picker = document.getElementById("avatar-picker");
       picker.innerHTML = AVATAR_IDS.map((id) => `
-        <button type="button" data-avatar="${id}" class="${id === selectedAvatar ? "is-selected" : ""}" aria-label="Seleccionar avatar">
+        <button type="button" data-avatar="${id}" class="${id === selectedAvatar ? "is-selected" : ""}" aria-label="Seleccionar ${AVATAR_NAMES[id]}">
           <img class="avatar" src="${avatarPath(id)}" alt="" />
+          <span>${AVATAR_NAMES[id].split(",")[0]}</span>
         </button>`).join("");
       picker.querySelectorAll("button").forEach((btn) => {
         btn.addEventListener("click", () => {

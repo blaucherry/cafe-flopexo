@@ -256,12 +256,16 @@ a.card {
   border: 2px solid #fff; box-shadow: var(--shadow-soft);
 }
 .avatar--lg { width: 84px; height: 84px; }
-.avatar-picker { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+.avatar-picker { display: grid; grid-template-columns: repeat(4, minmax(76px, 1fr)); gap: var(--space-2); }
 .avatar-picker button {
-  border: 2px solid transparent; border-radius: 50%; padding: 2px;
-  background: none; cursor: pointer;
+  border: 3px solid transparent; border-radius: 18px; padding: 5px;
+  background: none; cursor: pointer; color: var(--color-olive);
+  font: inherit; font-size: 0.78rem; font-weight: 700;
+  display: grid; gap: 0.35rem; justify-items: center;
 }
-.avatar-picker button.is-selected { border-color: var(--color-orange-strong); }
+.avatar-picker button .avatar { width: 82px; height: 82px; border-radius: 16px; }
+.avatar-picker button.is-selected { border-color: var(--color-orange-strong); background: var(--color-cream-2); }
+.avatar-picker button:hover { transform: translateY(-2px); }
 
 /* --- Reseñas --- */
 .review-item { border-bottom: 1px solid var(--surface-card-border); padding-block: var(--space-2); }

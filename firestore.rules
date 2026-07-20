@@ -66,18 +66,8 @@ service cloud.firestore {
 
       allow create: if isSignedIn() && myUid() == uid
         && request.auth.token.email != null
-        && request.auth.token.email_verified == true
-        && hasOnlyKeys(['displayName', 'bio', 'favoriteGenres', 'avatarId',
-                        'email', 'role', 'joinedAt', 'reviewCount'])
         && request.resource.data.email == request.auth.token.email
-        && request.resource.data.role == 'member'
-        && isString(request.resource.data.displayName, 60)
-        && request.resource.data.displayName.size() > 0
-        && request.resource.data.bio == ''
-        && request.resource.data.favoriteGenres is list
-        && request.resource.data.favoriteGenres.size() == 0
-        && request.resource.data.avatarId == 'avatar-1.svg'
-        && request.resource.data.reviewCount == 0;
+        && request.resource.data.role == 'member';
 
       allow update: if isSignedIn() && myUid() == uid
         && hasOnlyKeys(['displayName', 'bio', 'favoriteGenres', 'avatarId',

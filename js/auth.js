@@ -61,7 +61,7 @@ async function createMemberProfile(user) {
     role: ROLES.MEMBER,
     bio: "",
     favoriteGenres: [],
-    avatarId: "avatar-1.svg",
+    avatarId: "avatar-1.png",
     joinedAt: serverTimestamp(),
     reviewCount: 0,
   });

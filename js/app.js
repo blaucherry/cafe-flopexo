@@ -32,15 +32,26 @@ export const ROLES = { ADMIN: "admin", MEMBER: "member" };
 
 // --- Avatares predefinidos (assets/avatars) --------------------------------
 export const AVATAR_IDS = [
-  "avatar-1.svg",
-  "avatar-2.svg",
-  "avatar-3.svg",
-  "avatar-4.svg",
-  "avatar-5.svg",
-  "avatar-6.svg",
-  "avatar-7.svg",
-  "avatar-8.svg",
+  "avatar-1.png",
+  "avatar-2.png",
+  "avatar-3.png",
+  "avatar-4.png",
+  "avatar-5.png",
+  "avatar-6.png",
+  "avatar-7.png",
+  "avatar-8.png",
 ];
+
+export const AVATAR_NAMES = {
+  "avatar-1.png": "Félix, zorro bibliotecario",
+  "avatar-2.png": "Michi, lector nocturno",
+  "avatar-3.png": "Flora, bruja del bosque",
+  "avatar-4.png": "Lumi, fantasma lector",
+  "avatar-5.png": "Mocchi, sabio del bosque",
+  "avatar-6.png": "Polilla, guardiana de historias",
+  "avatar-7.png": "Moka, dragón cafetero",
+  "avatar-8.png": "Cosmo, búho astrónomo",
+};
 
 export function avatarPath(avatarId) {
   const safe = AVATAR_IDS.includes(avatarId) ? avatarId : AVATAR_IDS[0];

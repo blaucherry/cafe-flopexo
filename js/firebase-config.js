@@ -30,4 +30,4 @@ export const firebaseConfig = {
 // Reemplázalo por el ID real de una playlist pública de YouTube.
 // Ejemplo de cómo se ve un ID (esto NO es un ID real, es un marcador):
 // https://www.youtube.com/playlist?list=PLxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-export const AMBIENT_MUSIC_PLAYLIST_ID = "REEMPLAZA_CON_TU_PLAYLIST_ID";
+export const AMBIENT_MUSIC_PLAYLIST_ID = "PLFo9sqiKa2zohNYRgcr55ojCuAMEQk5oi";
