@@ -1,38 +1,10 @@
 # Carpeta `books/`
 
 Aquí viven los archivos PDF de los libros del club. Café Flopexo no usa
-Firebase Storage (requeriría activar el plan de pago Blaze), así que los
+Firebase Storage, así que los
 PDFs se publican directamente como archivos estáticos dentro de este
 repositorio, junto con el resto del sitio en GitHub Pages.
 
-## Cómo agregar un PDF nuevo
-
-1. Copia el archivo PDF dentro de esta carpeta (`books/`).
-2. Usa un nombre de archivo simple, sin espacios ni acentos, por ejemplo:
-   `cien-anios-de-soledad.pdf`
-3. En `admin.html`, al crear o editar el libro, en el campo **"Ruta del
-   PDF"** escribe exactamente:
-   ```
-   books/cien-anios-de-soledad.pdf
-   ```
-4. Guarda los cambios del libro. El lector de `libro.html` intentará abrir
-   esa ruta relativa con PDF.js.
-5. Haz commit y push del archivo PDF junto con el resto del código para que
-   quede publicado en GitHub Pages.
-
-## Formato de ruta permitido
-
-Firestore únicamente aceptará rutas con este patrón (validado tanto en el
-cliente como recomendado revisar antes de guardar):
-
-```
-books/nombre-de-archivo.pdf
-```
-
-- Debe empezar con `books/`.
-- Solo letras, números, puntos, guiones y guiones bajos en el nombre.
-- Debe terminar en `.pdf`.
-- No se permiten rutas con `..` ni URLs externas.
 
 ## ⚠️ Aviso importante de privacidad
 
@@ -55,8 +27,4 @@ Por lo tanto:
   carpeta por Firebase Storage con reglas de acceso (plan Blaze) u otro
   proveedor con URLs firmadas.
 
-## Repositorio vacío por defecto
 
-Este README es el único archivo versionado en `books/` por defecto. Los
-PDFs reales no se incluyen en la plantilla: cada club debe agregar los
-suyos siguiendo el aviso de arriba.
