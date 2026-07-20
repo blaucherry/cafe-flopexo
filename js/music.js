@@ -21,6 +21,7 @@ export function initMusicWidget() {
   const fallbackMsg = card.querySelector("[data-music-fallback]");
 
   const isPlaceholder = !AMBIENT_MUSIC_PLAYLIST_ID || AMBIENT_MUSIC_PLAYLIST_ID === PLACEHOLDER_ID;
+  const playlistUrl = `https://www.youtube.com/playlist?list=${encodeURIComponent(AMBIENT_MUSIC_PLAYLIST_ID)}`;
 
   if (isPlaceholder) {
     fallbackMsg.hidden = false;
@@ -32,6 +33,15 @@ export function initMusicWidget() {
 
   const savedVisible = localStorage.getItem(STORAGE_KEY);
   const visible = savedVisible === null ? false : savedVisible === "true";
+
+  const externalLink = document.createElement("a");
+  externalLink.href = playlistUrl;
+  externalLink.target = "_blank";
+  externalLink.rel = "noopener noreferrer";
+  externalLink.className = "btn btn--ghost btn--sm music-card__external";
+  externalLink.textContent = "Abrir playlist en YouTube ↗";
+  card.appendChild(externalLink);
+
   applyVisibility(visible);
 
   toggleBtn.addEventListener("click", () => {
@@ -45,11 +55,16 @@ export function initMusicWidget() {
       if (!frameWrap.querySelector("iframe")) {
         const iframe = document.createElement("iframe");
         iframe.width = "100%";
-        iframe.height = "80";
+        // YouTube requiere un área suficientemente alta para que sus controles
+        // sean utilizables. Con 80 px mostraba la portada, pero el botón de
+        // reproducción podía quedar bloqueado en algunos navegadores.
+        iframe.height = "220";
         iframe.title = "Música ambiental de Café Flopexo";
         iframe.src =
-          `https://www.youtube.com/embed/videoseries?list=${encodeURIComponent(AMBIENT_MUSIC_PLAYLIST_ID)}&autoplay=0&loop=1`;
-        iframe.setAttribute("allow", "autoplay; encrypted-media");
+          `https://www.youtube-nocookie.com/embed/videoseries?list=${encodeURIComponent(AMBIENT_MUSIC_PLAYLIST_ID)}&autoplay=0&loop=1&playsinline=1`;
+        iframe.setAttribute("allow", "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share");
+        iframe.setAttribute("allowfullscreen", "");
+        iframe.setAttribute("referrerpolicy", "strict-origin-when-cross-origin");
         iframe.addEventListener("error", () => {
           fallbackMsg.hidden = false;
           fallbackMsg.textContent = "No se pudo cargar la música. Puede que YouTube haya bloqueado este contenido.";

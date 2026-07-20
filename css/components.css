@@ -246,7 +246,10 @@ a.card {
 /* --- Reproductor de música --- */
 .music-card { display: flex; flex-direction: column; gap: var(--space-2); }
 .music-card__header { display: flex; align-items: center; justify-content: space-between; }
-.music-card__frame { border-radius: var(--radius-md); overflow: hidden; }
+.music-card__frame { border-radius: var(--radius-md); overflow: hidden; min-height: 220px; }
+.music-card__frame[hidden] { min-height: 0; }
+.music-card__frame iframe { display: block; border: 0; }
+.music-card__external { align-self: flex-start; }
 .music-card__fallback { font-size: 0.85rem; color: var(--color-olive); }
 
 /* --- Avatares --- */
