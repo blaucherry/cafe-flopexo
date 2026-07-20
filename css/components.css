@@ -312,7 +312,7 @@ a.card {
 .btn:hover { transform: translateY(-3px); box-shadow: 0 10px 22px rgba(58,33,21,.15); }
 .btn:hover::after { transform: translateX(130%); }
 .btn:active { transform: translateY(0) scale(.98); }
-.btn--primary { background: linear-gradient(135deg, var(--color-roast), var(--color-caramel)); }
+.btn--primary { background: linear-gradient(135deg, var(--color-teal-deep), var(--color-teal)); }
 .btn--secondary { background: #f8ecd8; border-color: rgba(103,53,31,.2); }
 .btn--ghost { border: 1.5px solid var(--color-roast); background: rgba(255,250,241,.42); }
 .btn--sm { min-height: 36px; padding: 0.45rem 0.85rem; }
@@ -340,7 +340,7 @@ a.card {
 .card--interactive:hover {
   transform: translateY(-7px) rotate(-0.25deg);
   box-shadow: var(--shadow-lift);
-  border-color: rgba(201,134,67,.48);
+  border-color: rgba(43,77,82,.45);
 }
 
 .grid { gap: clamp(1rem, 2.2vw, 1.75rem); }
@@ -352,6 +352,7 @@ a.card {
 .book-card__title { font-size: 1.22rem; color: var(--color-roast); }
 
 .badge { padding: 0.3rem 0.72rem; text-transform: capitalize; }
+.badge--leyendo { background: var(--color-teal-deep); color: #fff; }
 
 .field { gap: 0.45rem; margin-bottom: 1rem; }
 .field label { color: var(--color-roast); font-size: 0.82rem; letter-spacing: .025em; }
@@ -371,11 +372,11 @@ a.card {
   transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
 }
 .field textarea { min-height: 116px; }
-.field input:hover, .field select:hover, .field textarea:hover { border-color: rgba(201,134,67,.55); }
+.field input:hover, .field select:hover, .field textarea:hover { border-color: rgba(63,109,116,.5); }
 .field input:focus, .field select:focus, .field textarea:focus {
   outline: none;
-  border-color: var(--color-caramel);
-  box-shadow: 0 0 0 4px rgba(201,134,67,.16);
+  border-color: var(--color-teal);
+  box-shadow: 0 0 0 4px rgba(63,109,116,.18);
   transform: translateY(-1px);
 }
 
@@ -419,7 +420,7 @@ details[open].card > form { animation: rustic-form-open 300ms ease both; }
 .avatar-picker { gap: 0.8rem; }
 .avatar-picker button { transition: transform 200ms cubic-bezier(.2,.8,.2,1), background 200ms ease, border-color 200ms ease; }
 .avatar-picker button:hover { transform: translateY(-6px) rotate(-1deg); background: rgba(233,184,95,.13); }
-.avatar-picker button.is-selected { box-shadow: 0 9px 18px rgba(201,134,67,.2); }
+.avatar-picker button.is-selected { border-color: var(--color-teal-deep); box-shadow: 0 9px 18px rgba(43,77,82,.22); }
 
 .modal-backdrop { backdrop-filter: blur(7px); animation: modal-fade 180ms ease both; }
 .modal { animation: modal-pop 260ms cubic-bezier(.2,.8,.2,1) both; }

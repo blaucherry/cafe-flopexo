@@ -37,7 +37,7 @@
   --space-5: 3.4rem;
 
   /* Estados */
-  --focus-ring: 0 0 0 3px rgba(250, 128, 69, 0.45);
+  --focus-ring: 0 0 0 3px rgba(63, 109, 116, 0.45);
   --color-success: #4C6B3C;
   --color-success-bg: #E8F0DF;
   --color-error: #A23B2E;
@@ -222,7 +222,7 @@ main { padding-block: var(--space-4); position: relative; z-index: 1; }
   font-family: var(--font-display);
   font-style: italic;
   color: var(--color-olive);
-  border-left: 3px solid var(--color-orange-strong);
+  border-left: 3px solid var(--color-teal);
   padding-left: var(--space-2);
 }
 
@@ -245,6 +245,15 @@ main { padding-block: var(--space-4); position: relative; z-index: 1; }
   --color-sage: #6c7040;
   --color-parchment: #f6ead7;
   --color-paper: #fffaf1;
+
+  /* Acento "bruma azul": rompe la monotonía café en botones, badges,
+     nav activa y estados de foco/selección. El resto de la paleta
+     (encabezados, marca, botones secundarios) se queda en tonos café
+     para no perder la identidad del club. */
+  --color-teal: #3f6d74;
+  --color-teal-deep: #2b4d52;
+  --color-teal-light: #a9c7c9;
+
   --surface-card: rgba(255, 250, 241, 0.94);
   --surface-card-border: rgba(92, 53, 30, 0.18);
   --shadow-soft: 0 10px 26px rgba(67, 38, 21, 0.10), 0 2px 6px rgba(67, 38, 21, 0.06);
@@ -335,10 +344,11 @@ h3 { font-size: clamp(1.12rem, 1.5vw, 1.35rem); }
   font-weight: 700;
   transition: color 180ms ease, background 180ms ease, transform 180ms ease;
 }
-.main-nav__links a:hover { background: rgba(233, 184, 95, 0.18); transform: translateY(-2px); }
+.main-nav__links a:hover { background: rgba(63, 109, 116, 0.14); transform: translateY(-2px); }
 .main-nav__links a[aria-current="page"] {
-  background: var(--color-honey);
-  box-shadow: 0 6px 14px rgba(201, 134, 67, 0.20);
+  background: var(--color-teal-light);
+  color: var(--color-teal-deep);
+  box-shadow: 0 6px 14px rgba(43, 77, 82, 0.20);
 }
 .main-nav__links a[aria-current="page"]::after {
   content: "";
@@ -346,7 +356,7 @@ h3 { font-size: clamp(1.12rem, 1.5vw, 1.35rem); }
   width: 22px;
   height: 3px;
   border-radius: 3px;
-  background: var(--color-roast);
+  background: var(--color-teal-deep);
   left: 50%;
   bottom: -5px;
   transform: translateX(-50%);
@@ -367,7 +377,7 @@ main { padding-block: clamp(2.5rem, 5vw, 5rem); }
   width: 76px;
   height: 5px;
   border-radius: 5px;
-  background: linear-gradient(90deg, var(--color-caramel), var(--color-honey));
+  background: linear-gradient(90deg, var(--color-teal-deep), var(--color-teal));
 }
 
 .lit-quote {
