@@ -9,12 +9,14 @@
 <link rel="stylesheet" href="css/components.css" />
 <link rel="stylesheet" href="css/responsive.css" />
 <style>
-  .admin-tabs { display:flex; gap:0.4rem; flex-wrap:wrap; margin-bottom: var(--space-3); }
-  .admin-tabs button { border:none; background: var(--color-cream-2); padding:0.5rem 1rem; border-radius:999px; cursor:pointer; font-weight:700; color:var(--color-olive); }
-  .admin-tabs button.is-active { background: var(--color-orange-strong); color:#fff; }
+  .admin-tabs { display:flex; gap:0.65rem; flex-wrap:wrap; margin-bottom: var(--space-3); padding:0.45rem; width:fit-content; border:1px solid rgba(79,47,29,.12); border-radius:16px; background:rgba(255,253,247,.68); box-shadow:var(--shadow-soft); }
+  .admin-tabs button { min-height:42px; border:1px solid transparent; background:transparent; padding:0.65rem 1rem; border-radius:12px; cursor:pointer; font-weight:800; color:var(--color-olive); transition:transform .2s ease, background .2s ease, color .2s ease; }
+  .admin-tabs button:hover { transform:translateY(-2px); background:rgba(205,145,63,.12); }
+  .admin-tabs button.is-active { background:var(--roast); color:#fffaf0; box-shadow:0 8px 18px rgba(92,50,27,.2); }
   .admin-panel { display:none; }
   .admin-panel.is-active { display:block; }
-  .admin-book-row { display:flex; gap: var(--space-2); align-items:center; border-bottom:1px solid var(--surface-card-border); padding: var(--space-2) 0; flex-wrap:wrap; }
+  .admin-book-row { display:flex; gap: var(--space-2); align-items:center; border-bottom:1px solid var(--surface-card-border); padding: var(--space-2); flex-wrap:wrap; border-radius:12px; transition:background .2s ease; }
+  .admin-book-row:hover { background:rgba(205,145,63,.08); }
   .admin-book-row img { width:48px; aspect-ratio:2/3; object-fit:cover; border-radius:6px; }
 </style>
 </head>
@@ -131,7 +133,7 @@
       </section>
     </main>
 
-    <footer class="site-footer">Café Flopexo · club de lectura privado</footer>
+    <footer class="site-footer">@blau.cherry</footer>
   </div>
 
   <div class="modal-backdrop" id="confirm-modal" hidden>
