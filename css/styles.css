@@ -232,3 +232,208 @@ main { padding-block: var(--space-4); position: relative; z-index: 1; }
   color: var(--color-olive);
   font-size: 0.9rem;
 }
+
+/* ========================================================================
+   REDISEÑO 2026 · CAFETERÍA RÚSTICA EDITORIAL
+   ======================================================================== */
+
+:root {
+  --color-espresso: #3a2115;
+  --color-roast: #67351f;
+  --color-caramel: #c98643;
+  --color-honey: #e9b85f;
+  --color-sage: #6c7040;
+  --color-parchment: #f6ead7;
+  --color-paper: #fffaf1;
+  --surface-card: rgba(255, 250, 241, 0.94);
+  --surface-card-border: rgba(92, 53, 30, 0.18);
+  --shadow-soft: 0 10px 26px rgba(67, 38, 21, 0.10), 0 2px 6px rgba(67, 38, 21, 0.06);
+  --shadow-lift: 0 20px 44px rgba(67, 38, 21, 0.17), 0 6px 14px rgba(67, 38, 21, 0.08);
+  --radius-lg: 18px;
+  --radius-md: 12px;
+  --space-1: 0.5rem;
+  --space-2: 0.9rem;
+  --space-3: 1.5rem;
+  --space-4: 2.5rem;
+  --space-5: 4rem;
+}
+
+body {
+  font-size: 16px;
+  background-color: var(--color-parchment);
+  background-image:
+    radial-gradient(circle at 12% 8%, rgba(233, 184, 95, 0.26), transparent 28rem),
+    radial-gradient(circle at 90% 20%, rgba(108, 112, 64, 0.10), transparent 26rem),
+    linear-gradient(115deg, rgba(255,255,255,0.34), transparent 40%),
+    repeating-linear-gradient(0deg, rgba(103,53,31,0.018) 0, rgba(103,53,31,0.018) 1px, transparent 1px, transparent 5px);
+}
+
+body::before {
+  opacity: 0.5;
+  background-image:
+    radial-gradient(rgba(58, 33, 21, 0.055) 0.65px, transparent 0.65px),
+    radial-gradient(rgba(201, 134, 67, 0.035) 0.8px, transparent 0.8px);
+  background-position: 0 0, 7px 7px;
+  background-size: 7px 7px, 11px 11px;
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  box-shadow: inset 0 0 130px rgba(103, 53, 31, 0.055);
+}
+
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-shell main { flex: 1; }
+
+.container { width: min(1180px, calc(100% - 3rem)); }
+
+h1, h2, h3, h4 { color: var(--color-roast); letter-spacing: -0.018em; }
+h1 { font-size: clamp(2.35rem, 4.2vw, 4rem); line-height: 1.02; font-weight: 700; }
+h2 { font-size: clamp(1.55rem, 2.3vw, 2.15rem); }
+h3 { font-size: clamp(1.12rem, 1.5vw, 1.35rem); }
+
+.site-header {
+  background: rgba(255, 249, 239, 0.88);
+  backdrop-filter: blur(18px) saturate(1.15);
+  border-top: 3px solid var(--color-roast);
+  border-bottom: 1px solid rgba(103, 53, 31, 0.16);
+  box-shadow: 0 5px 24px rgba(58, 33, 21, 0.07);
+}
+
+.site-header__inner { min-height: 76px; padding-block: 0.65rem; }
+
+.brand {
+  font-size: 1.42rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  white-space: nowrap;
+}
+
+.brand .deco-steam {
+  width: 30px;
+  height: 34px;
+  border-radius: 50% 50% 42% 42%;
+  background: rgba(233, 184, 95, 0.18);
+}
+
+.main-nav { gap: 1rem; }
+.main-nav__links { gap: 0.25rem; align-items: center; }
+.main-nav__links a {
+  position: relative;
+  padding: 0.68rem 0.78rem;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  transition: color 180ms ease, background 180ms ease, transform 180ms ease;
+}
+.main-nav__links a:hover { background: rgba(233, 184, 95, 0.18); transform: translateY(-2px); }
+.main-nav__links a[aria-current="page"] {
+  background: var(--color-honey);
+  box-shadow: 0 6px 14px rgba(201, 134, 67, 0.20);
+}
+.main-nav__links a[aria-current="page"]::after {
+  content: "";
+  position: absolute;
+  width: 22px;
+  height: 3px;
+  border-radius: 3px;
+  background: var(--color-roast);
+  left: 50%;
+  bottom: -5px;
+  transform: translateX(-50%);
+}
+
+main { padding-block: clamp(2.5rem, 5vw, 5rem); }
+
+.page-title {
+  margin-bottom: clamp(1.8rem, 3.5vw, 3rem);
+  padding-bottom: 1rem;
+  position: relative;
+}
+.page-title::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 76px;
+  height: 5px;
+  border-radius: 5px;
+  background: linear-gradient(90deg, var(--color-caramel), var(--color-honey));
+}
+
+.lit-quote {
+  max-width: 720px;
+  border-left-width: 4px;
+  background: rgba(255, 250, 241, 0.38);
+  padding: 0.6rem 0.9rem;
+  border-radius: 0 10px 10px 0;
+}
+
+.dashboard-grid {
+  grid-template-columns: minmax(0, 1.7fr) minmax(300px, 0.8fr);
+  align-items: start;
+  gap: 2rem;
+}
+
+.book-detail-grid {
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: 2rem;
+  align-items: start;
+}
+
+.profile-container { max-width: 720px; }
+
+.login-body {
+  display: flex;
+  min-height: 100vh;
+  flex-direction: column;
+  background:
+    linear-gradient(90deg, rgba(58,33,21,0.45), rgba(58,33,21,0.06)),
+    radial-gradient(circle at 18% 25%, rgba(233,184,95,0.48), transparent 25rem),
+    var(--color-parchment);
+}
+.login-container {
+  width: min(480px, calc(100% - 2rem));
+  padding-block: clamp(2rem, 8vh, 6rem);
+  margin-block: auto;
+}
+.login-container > .card { border-top: 6px solid var(--color-caramel); }
+.login-container h1 { font-size: clamp(2.35rem, 8vw, 3.4rem); }
+.login-footer { padding-top: 0; }
+
+.site-footer {
+  position: relative;
+  padding: 2.2rem 1rem;
+  color: var(--color-roast);
+  font-weight: 700;
+  letter-spacing: 0.035em;
+}
+.site-footer::before {
+  content: "";
+  display: block;
+  width: 42px;
+  height: 1px;
+  margin: 0 auto 1rem;
+  background: rgba(103, 53, 31, 0.35);
+}
+
+/* Entrada expresiva, con respeto por prefers-reduced-motion arriba. */
+main > * { animation: rustic-reveal 560ms cubic-bezier(.2,.8,.2,1) both; }
+main > *:nth-child(2) { animation-delay: 80ms; }
+main > *:nth-child(3) { animation-delay: 150ms; }
+main > *:nth-child(4) { animation-delay: 220ms; }
+main > *:nth-child(5) { animation-delay: 290ms; }
+
+@keyframes rustic-reveal {
+  from { opacity: 0; transform: translateY(22px) scale(.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}

@@ -43,3 +43,192 @@
   .grid--books { grid-template-columns: repeat(2, 1fr); gap: var(--space-2); }
   .stars--input button { font-size: 1.3rem; }
 }
+
+/* --------------------------------------------------------------------------
+   REDISEÑO 2026 · RESPUESTA ADAPTATIVA
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 1020px) {
+  .site-header__inner {
+    min-height: 72px;
+  }
+
+  .nav-toggle {
+    display: inline-grid;
+    place-items: center;
+    flex: 0 0 44px;
+    width: 44px;
+    height: 44px;
+    border: 1px solid rgba(79, 47, 29, 0.18);
+    border-radius: 12px;
+    background: rgba(255, 253, 247, 0.88);
+    color: var(--espresso);
+    font-size: 1.2rem;
+    cursor: pointer;
+  }
+
+  .main-nav {
+    position: relative;
+    width: auto;
+    margin-left: auto;
+    justify-content: flex-end;
+    gap: 0.65rem;
+  }
+
+  .main-nav__links {
+    position: absolute;
+    z-index: 40;
+    top: calc(100% + 14px);
+    right: 0;
+    left: auto;
+    display: none;
+    width: min(360px, calc(100vw - 2rem));
+    padding: 0.75rem;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.3rem;
+    border: 1px solid rgba(79, 47, 29, 0.16);
+    border-radius: 16px;
+    background: rgba(255, 253, 247, 0.98);
+    box-shadow: var(--shadow-lift);
+    backdrop-filter: blur(18px);
+  }
+
+  .main-nav__links.is-open {
+    display: flex;
+    animation: menu-drop 240ms cubic-bezier(.2,.8,.2,1) both;
+  }
+
+  .main-nav__links a {
+    width: 100%;
+    padding: 0.8rem 0.9rem;
+  }
+
+  .dashboard-grid,
+  .book-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-grid > aside {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: var(--space-3);
+  }
+
+  .dashboard-grid > aside > * {
+    margin-top: 0 !important;
+  }
+
+  @keyframes menu-drop {
+    from { opacity: 0; transform: translateY(-8px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+}
+
+@media (max-width: 760px) {
+  .container {
+    width: min(100% - 2rem, 1180px);
+  }
+
+  main.container {
+    padding-block: 2rem 3rem;
+  }
+
+  .dashboard-grid > aside {
+    grid-template-columns: 1fr;
+  }
+
+  .grid--two,
+  .grid--three {
+    grid-template-columns: 1fr;
+  }
+
+  .page-title {
+    flex-direction: column;
+    align-items: flex-start;
+    margin-bottom: 1.8rem;
+  }
+
+  .page-title::after {
+    width: 72px;
+  }
+
+  .profile-container {
+    max-width: 100%;
+  }
+
+  .site-footer {
+    padding-block: 2.5rem 2rem;
+  }
+}
+
+@media (max-width: 560px) {
+  .container {
+    width: min(100% - 1.25rem, 1180px);
+  }
+
+  .site-header__inner {
+    min-height: 66px;
+    gap: 0.6rem;
+  }
+
+  .brand {
+    font-size: 1.08rem;
+  }
+
+  .brand::before {
+    width: 20px;
+    height: 26px;
+  }
+
+  .main-nav .btn {
+    min-height: 40px;
+    padding-inline: 0.75rem;
+    font-size: 0.78rem;
+  }
+
+  .main-nav__links {
+    position: fixed;
+    top: 76px;
+    right: 0.625rem;
+  }
+
+  h1 { font-size: clamp(2rem, 11vw, 3rem); }
+  h2 { font-size: clamp(1.45rem, 8vw, 2rem); }
+
+  .card {
+    padding: 1.15rem;
+    border-radius: 16px;
+  }
+
+  .grid--books {
+    grid-template-columns: 1fr;
+  }
+
+  .avatar-picker {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .login-card {
+    padding: 1.35rem;
+  }
+
+  .admin-tabs {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-tabs button {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

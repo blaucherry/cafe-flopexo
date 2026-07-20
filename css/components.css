@@ -286,4 +286,144 @@ a.card {
 .modal { max-width: 420px; width: 100%; }
 .modal__actions { display: flex; gap: var(--space-2); justify-content: flex-end; margin-top: var(--space-2); }
 
+/* ========================================================================
+   COMPONENTES · CAFETERÍA RÚSTICA PROFESIONAL
+   ======================================================================== */
+
+.btn {
+  min-height: 44px;
+  padding: 0.72rem 1.25rem;
+  letter-spacing: 0.01em;
+  transition: transform 200ms cubic-bezier(.2,.8,.2,1), box-shadow 200ms ease,
+              background 200ms ease, color 200ms ease;
+  position: relative;
+  overflow: hidden;
+  justify-content: center;
+}
+.btn::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  background: linear-gradient(105deg, transparent 35%, rgba(255,255,255,.34) 48%, transparent 61%);
+  transform: translateX(-130%);
+  transition: transform 480ms ease;
+  pointer-events: none;
+}
+.btn:hover { transform: translateY(-3px); box-shadow: 0 10px 22px rgba(58,33,21,.15); }
+.btn:hover::after { transform: translateX(130%); }
+.btn:active { transform: translateY(0) scale(.98); }
+.btn--primary { background: linear-gradient(135deg, var(--color-roast), var(--color-caramel)); }
+.btn--secondary { background: #f8ecd8; border-color: rgba(103,53,31,.2); }
+.btn--ghost { border: 1.5px solid var(--color-roast); background: rgba(255,250,241,.42); }
+.btn--sm { min-height: 36px; padding: 0.45rem 0.85rem; }
+
+.card {
+  position: relative;
+  border: 1px solid rgba(103,53,31,.17);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-soft);
+  padding: clamp(1.25rem, 2.5vw, 2rem);
+  background:
+    linear-gradient(145deg, rgba(255,255,255,.72), rgba(255,250,241,.72)),
+    var(--surface-card);
+  transition: transform 230ms cubic-bezier(.2,.8,.2,1), box-shadow 230ms ease,
+              border-color 230ms ease;
+}
+.card::before {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  border: 1px solid rgba(201,134,67,.08);
+  border-radius: calc(var(--radius-lg) - 6px);
+  pointer-events: none;
+}
+.card--interactive:hover {
+  transform: translateY(-7px) rotate(-0.25deg);
+  box-shadow: var(--shadow-lift);
+  border-color: rgba(201,134,67,.48);
+}
+
+.grid { gap: clamp(1rem, 2.2vw, 1.75rem); }
+.grid--two { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+.grid--books { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+
+.book-card { gap: 0.65rem; overflow: hidden; }
+.book-card__cover, .img-fallback { box-shadow: 0 8px 18px rgba(58,33,21,.13); }
+.book-card__title { font-size: 1.22rem; color: var(--color-roast); }
+
+.badge { padding: 0.3rem 0.72rem; text-transform: capitalize; }
+
+.field { gap: 0.45rem; margin-bottom: 1rem; }
+.field label { color: var(--color-roast); font-size: 0.82rem; letter-spacing: .025em; }
+.field input[type="text"],
+.field input[type="email"],
+.field input[type="password"],
+.field input[type="number"],
+.field input[type="url"],
+.field input[type="datetime-local"],
+.field select,
+.field textarea {
+  min-height: 47px;
+  border: 1.5px solid rgba(103,53,31,.18);
+  border-radius: 11px;
+  background: rgba(255,255,255,.84);
+  box-shadow: inset 0 1px 2px rgba(58,33,21,.035);
+  transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+.field textarea { min-height: 116px; }
+.field input:hover, .field select:hover, .field textarea:hover { border-color: rgba(201,134,67,.55); }
+.field input:focus, .field select:focus, .field textarea:focus {
+  outline: none;
+  border-color: var(--color-caramel);
+  box-shadow: 0 0 0 4px rgba(201,134,67,.16);
+  transform: translateY(-1px);
+}
+
+.empty-state {
+  min-height: 150px;
+  display: grid;
+  place-content: center;
+  gap: 0.4rem;
+  background-image: radial-gradient(rgba(201,134,67,.06) 1px, transparent 1px);
+  background-size: 9px 9px;
+}
+.empty-state__icon {
+  width: 58px;
+  height: 58px;
+  display: grid;
+  place-items: center;
+  margin: 0 auto .55rem;
+  border-radius: 50%;
+  background: rgba(233,184,95,.18);
+  animation: empty-float 3s ease-in-out infinite;
+}
+@keyframes empty-float { 50% { transform: translateY(-7px) rotate(3deg); } }
+
+details.card > summary {
+  list-style: none;
+  padding: .25rem 0;
+  font-family: var(--font-display);
+  font-size: 1.16rem;
+}
+details.card > summary::-webkit-details-marker { display: none; }
+details.card > summary::before { content: "+"; display: inline-grid; place-items: center; width: 26px; height: 26px; margin-right: .65rem; border-radius: 50%; background: var(--color-honey); color: var(--color-roast); }
+details[open].card > summary::before { content: "–"; }
+details[open].card > form { animation: rustic-form-open 300ms ease both; }
+@keyframes rustic-form-open { from { opacity: 0; transform: translateY(-8px); } }
+
+.music-card { overflow: hidden; }
+.music-card__header { gap: 1rem; }
+.music-card__frame { box-shadow: 0 9px 22px rgba(58,33,21,.15); }
+
+.avatar { border: 3px solid var(--color-paper); }
+.avatar-picker { gap: 0.8rem; }
+.avatar-picker button { transition: transform 200ms cubic-bezier(.2,.8,.2,1), background 200ms ease, border-color 200ms ease; }
+.avatar-picker button:hover { transform: translateY(-6px) rotate(-1deg); background: rgba(233,184,95,.13); }
+.avatar-picker button.is-selected { box-shadow: 0 9px 18px rgba(201,134,67,.2); }
+
+.modal-backdrop { backdrop-filter: blur(7px); animation: modal-fade 180ms ease both; }
+.modal { animation: modal-pop 260ms cubic-bezier(.2,.8,.2,1) both; }
+@keyframes modal-fade { from { opacity: 0; } }
+@keyframes modal-pop { from { opacity: 0; transform: translateY(16px) scale(.96); } }
+
 [hidden] { display: none !important; }
