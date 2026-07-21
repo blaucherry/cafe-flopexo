@@ -28,6 +28,7 @@
     import { requireAuth, initLogoutButton } from "./js/auth.js";
     import { renderHeader, escapeHTML, avatarPath, formatDate, showToast, initOfflineBanner,} from "./js/app.js";
     import { loadMembers } from "./js/profiles.js";
+    import { initNotificationBell } from "./js/notifications.js";
 
     (async function init() {
       initOfflineBanner();
@@ -35,6 +36,7 @@
       if (!session) return;
       renderHeader("miembros.html", session.profile);
       initLogoutButton();
+      initNotificationBell();
 
       const slot = document.getElementById("members-slot");
       slot.innerHTML = Array.from({ length: 4 }).map(() =>

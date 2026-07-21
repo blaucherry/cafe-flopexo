@@ -42,21 +42,27 @@
     import { requireAuth, initLogoutButton } from "./js/auth.js";
     import { renderHeader, escapeHTML, formatDateTime, showToast, initOfflineBanner,} from "./js/app.js";
     import { loadEvents, splitEvents, nextEvent } from "./js/calendar.js";
+    import { loadRsvps, getMyRsvp, setRsvp, summarizeRsvps, RSVP_STATUS, RSVP_LABELS } from "./js/rsvp.js";
+    import { initNotificationBell } from "./js/notifications.js";
+
+    let session;
 
     (async function init() {
       initOfflineBanner();
-      const session = await requireAuth();
+      session = await requireAuth();
       if (!session) return;
       renderHeader("calendario.html", session.profile);
       initLogoutButton();
+      initNotificationBell();
 
       document.getElementById("next-slot").innerHTML = `<div class="skeleton skeleton--line" style="width:60%"></div>`;
       try {
         const events = await loadEvents();
-        renderNext(nextEvent(events));
+        const next = nextEvent(events);
+        renderNext(next);
         const { upcoming, past } = splitEvents(events);
-        renderList("upcoming-slot", upcoming.slice(1), "No hay más actividades programadas por ahora.");
-        renderList("past-slot", past, "Todavía no hay reuniones pasadas.");
+        renderList("upcoming-slot", upcoming.slice(1), "No hay más actividades programadas por ahora.", true);
+        renderList("past-slot", past, "Todavía no hay reuniones pasadas.", false);
       } catch (err) {
         showToast("No se pudo cargar el calendario.", "error");
       }
@@ -68,19 +74,21 @@
         slot.innerHTML = `<div class="empty-state card"><div class="empty-state__icon">🗓️</div><p>Aún no hay una reunión programada. La administradora puede agregar una desde el panel.</p></div>`;
         return;
       }
-      slot.innerHTML = eventCardHTML(event, true);
+      slot.innerHTML = eventCardHTML(event, true, true);
+      mountRsvp(event.id);
     }
 
-    function renderList(slotId, events, emptyMsg) {
+    function renderList(slotId, events, emptyMsg, withRsvp) {
       const slot = document.getElementById(slotId);
       if (!events.length) {
         slot.innerHTML = `<div class="empty-state card" style="grid-column:1/-1;"><div class="empty-state__icon">📭</div><p>${escapeHTML(emptyMsg)}</p></div>`;
         return;
       }
-      slot.innerHTML = events.map((e) => eventCardHTML(e, false)).join("");
+      slot.innerHTML = events.map((e) => eventCardHTML(e, false, withRsvp)).join("");
+      if (withRsvp) events.forEach((e) => mountRsvp(e.id));
     }
 
-    function eventCardHTML(e, featured) {
+    function eventCardHTML(e, featured, withRsvp) {
       return `
         <div class="card" style="${featured ? "border-color: var(--color-orange-strong);" : ""}">
           <p style="color: var(--color-olive); font-weight:700; margin-bottom:0.2rem;">${formatDateTime(e.date)}</p>
@@ -88,7 +96,54 @@
           ${e.bookTitle ? `<p>📖 ${escapeHTML(e.bookTitle)}</p>` : ""}
           ${e.chapters ? `<p><strong>Lectura acordada:</strong> ${escapeHTML(e.chapters)}</p>` : ""}
           ${e.note ? `<p class="hint">${escapeHTML(e.note)}</p>` : ""}
+          ${withRsvp ? `<div data-rsvp-slot="${e.id}"></div>` : ""}
         </div>`;
+    }
+
+    // --- RSVP ------------------------------------------------------------------
+    async function mountRsvp(eventId) {
+      const slot = document.querySelector(`[data-rsvp-slot="${eventId}"]`);
+      if (!slot) return;
+      slot.innerHTML = `<div class="skeleton skeleton--line" style="width:40%"></div>`;
+
+      let mine, all;
+      try {
+        [mine, all] = await Promise.all([
+          getMyRsvp(eventId, session.user.uid),
+          loadRsvps(eventId),
+        ]);
+      } catch (err) {
+        slot.innerHTML = "";
+        return;
+      }
+
+      renderRsvp(slot, eventId, mine?.status, all);
+    }
+
+    function renderRsvp(slot, eventId, myStatus, all) {
+      const summary = summarizeRsvps(all);
+      slot.innerHTML = `
+        <div class="rsvp-row">
+          ${Object.values(RSVP_STATUS).map((status) => `
+            <button type="button" class="rsvp-btn ${status === myStatus ? "is-selected" : ""}" data-rsvp-btn="${status}">
+              ${escapeHTML(RSVP_LABELS[status])}
+            </button>`).join("")}
+        </div>
+        <p class="rsvp-summary">${summary[RSVP_STATUS.YES]} van · ${summary[RSVP_STATUS.MAYBE]} tal vez · ${summary[RSVP_STATUS.NO]} no pueden</p>`;
+
+      slot.querySelectorAll("[data-rsvp-btn]").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const status = btn.dataset.rsvpBtn;
+          btn.disabled = true;
+          try {
+            await setRsvp(eventId, session.user.uid, status);
+            await mountRsvp(eventId);
+          } catch (err) {
+            showToast("No se pudo guardar tu confirmación.", "error");
+            btn.disabled = false;
+          }
+        });
+      });
     }
   </script>
 </body>

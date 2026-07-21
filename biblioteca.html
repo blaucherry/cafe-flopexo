@@ -64,6 +64,7 @@
     import { requireAuth, initLogoutButton } from "./js/auth.js";
     import { renderHeader, escapeHTML, debounce, handleImageFallback, showToast, initOfflineBanner,} from "./js/app.js";
     import { loadAllBooks, filterBooks, groupByStatus } from "./js/books.js";
+    import { initNotificationBell } from "./js/notifications.js";
 
     let allBooks = [];
 
@@ -73,6 +74,7 @@
       if (!session) return;
       renderHeader("biblioteca.html", session.profile);
       initLogoutButton();
+      initNotificationBell();
 
       showSkeletons();
       try {

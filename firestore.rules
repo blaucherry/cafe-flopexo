@@ -11,8 +11,10 @@ rules_version = '2';
 //   users/{uid}
 //   books/{bookId}
 //   books/{bookId}/reviews/{uid}
+//   books/{bookId}/progress/{uid}
 //   recommendations/{recId}
 //   events/{eventId}
+//   events/{eventId}/rsvps/{uid}
 //   settings/general
 // =============================================================================
 
@@ -142,6 +144,22 @@ service cloud.firestore {
         // cualquiera.
         allow delete: if isSignedIn() && (myUid() == reviewUid || isAdmin());
       }
+
+      // --- progress subcollection -------------------------------------------
+      // Progreso de lectura auto-reportado como porcentaje (0-100). Igual
+      // que en reviews, el ID del documento es el UID: un solo registro de
+      // avance por miembro y por libro.
+      match /progress/{progressUid} {
+        allow read: if isMember();
+
+        allow create, update: if isSignedIn() && myUid() == progressUid
+          && hasOnlyKeys(['percent', 'updatedAt'])
+          && request.resource.data.percent is int
+          && request.resource.data.percent >= 0
+          && request.resource.data.percent <= 100;
+
+        allow delete: if isSignedIn() && (myUid() == progressUid || isAdmin());
+      }
     }
 
     // --- recommendations/{recId} ---------------------------------------------
@@ -187,6 +205,19 @@ service cloud.firestore {
                         'note', 'createdAt'])
         && isString(request.resource.data.title, 200);
       allow delete: if isAdmin();
+
+      // --- rsvps subcollection -----------------------------------------------
+      // Confirmación de asistencia. El ID del documento es el UID: una sola
+      // respuesta por miembro y por evento, igual patrón que reviews/progress.
+      match /rsvps/{rsvpUid} {
+        allow read: if isMember();
+
+        allow create, update: if isSignedIn() && myUid() == rsvpUid
+          && hasOnlyKeys(['status', 'updatedAt'])
+          && request.resource.data.status in ['voy', 'tal_vez', 'no_puedo'];
+
+        allow delete: if isSignedIn() && (myUid() == rsvpUid || isAdmin());
+      }
     }
 
     // --- settings/general -------------------------------------------------------

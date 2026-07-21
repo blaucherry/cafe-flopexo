@@ -45,6 +45,18 @@
           </div>
         </div>
 
+        <section style="margin-top: var(--space-4);" aria-labelledby="h-progress">
+          <h2 id="h-progress">Tu progreso</h2>
+          <div class="card">
+            <div class="progress-label">
+              <span id="progress-text">Vas en el 0%</span>
+              <span class="hint" id="progress-club"></span>
+            </div>
+            <div class="progress-bar"><div class="progress-bar__fill" id="progress-fill" style="width:0%"></div></div>
+            <input type="range" min="0" max="100" step="5" value="0" class="progress-slider" id="progress-slider" aria-label="Porcentaje leído" />
+          </div>
+        </section>
+
         <section style="margin-top: var(--space-4);" aria-labelledby="h-reader">
           <h2 id="h-reader">Lector</h2>
           <div id="reader-slot" class="card" style="padding:0; overflow:hidden;"></div>
@@ -106,6 +118,8 @@
       loadReviews, getMyReview, upsertReview, deleteReview, starDistribution,
       REVIEW_TEXT_MAX_LENGTH,
     } from "./js/reviews.js";
+    import { getMyProgress, setMyProgress, loadClubAverage } from "./js/progress.js";
+    import { initNotificationBell } from "./js/notifications.js";
 
     const params = new URLSearchParams(window.location.search);
     const bookId = params.get("id");
@@ -118,6 +132,7 @@
       if (!session) return;
       renderHeader("biblioteca.html", session.profile);
       initLogoutButton();
+      initNotificationBell();
 
       if (!bookId) {
         showNotFound();
@@ -137,6 +152,7 @@
 
       renderBook(book);
       initReader(book);
+      initProgress();
       await loadReviewsSection();
       initReviewForm();
     })();
@@ -175,6 +191,45 @@
         "★".repeat(Math.round(b.avgRating || 0)) + "☆".repeat(5 - Math.round(b.avgRating || 0));
       document.getElementById("avg-text").textContent =
         b.reviewCount ? `${(b.avgRating || 0).toFixed(1)} de 5 (${b.reviewCount} reseña${b.reviewCount === 1 ? "" : "s"})` : "Sin calificaciones todavía";
+    }
+
+    // --- Progreso de lectura (% auto-reportado) --------------------------------
+    async function initProgress() {
+      const slider = document.getElementById("progress-slider");
+      const fill = document.getElementById("progress-fill");
+      const text = document.getElementById("progress-text");
+      const clubText = document.getElementById("progress-club");
+
+      let mine;
+      try {
+        mine = await getMyProgress(book.id, session.user.uid);
+      } catch (err) {
+        mine = null;
+      }
+      const percent = mine?.percent || 0;
+      slider.value = percent;
+      fill.style.width = `${percent}%`;
+      text.textContent = `Vas en el ${percent}%`;
+
+      loadClubAverage(book.id).then((avg) => {
+        clubText.textContent = avg
+          ? `El club va en promedio en el ${avg.average}% (${avg.count} reportando)`
+          : "Todavía nadie más ha reportado su avance.";
+      }).catch(() => {});
+
+      slider.addEventListener("input", () => {
+        fill.style.width = `${slider.value}%`;
+        text.textContent = `Vas en el ${slider.value}%`;
+      });
+
+      slider.addEventListener("change", async () => {
+        try {
+          await setMyProgress(book.id, session.user.uid, slider.value);
+          showToast("Progreso guardado.", "success");
+        } catch (err) {
+          showToast("No se pudo guardar tu progreso.", "error");
+        }
+      });
     }
 
     // --- Lector PDF.js -----------------------------------------------------

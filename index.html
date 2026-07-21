@@ -91,6 +91,8 @@
     import { loadEvents, nextEvent } from "./js/calendar.js";
     import { loadRecommendations } from "./js/recommendations.js";
     import { initMusicWidget } from "./js/music.js";
+    import { getMyRsvp, setRsvp, RSVP_STATUS, RSVP_LABELS } from "./js/rsvp.js";
+    import { initNotificationBell } from "./js/notifications.js";
 
     const QUOTES = [
       "Leer es viajar sin salir del sillón, con una taza de café en la mano.",
@@ -98,15 +100,18 @@
       "Entre páginas y aroma a café, el tiempo se vuelve amable.",
     ];
 
+    let session;
+
     (async function init() {
       initOfflineBanner();
       document.getElementById("pending-logout")?.addEventListener("click", logout);
-      const session = await requireAuth();
+      session = await requireAuth();
       if (!session) return;
       const { profile } = session;
 
       renderHeader("index.html", profile);
       initLogoutButton();
+      initNotificationBell();
       initMusicWidget();
 
       document.getElementById("greeting").textContent = `Hola, ${escapeHTML(profile.displayName || "amig@ lector")} 👋`;
@@ -120,7 +125,7 @@
         ]);
 
         renderCurrentBook(await getCurrentBook(books));
-        renderNextMeeting(nextEvent(events));
+        await renderNextMeeting(nextEvent(events));
         renderRecentRecs(recs.slice(0, 2));
 
         const current = await getCurrentBook(books);
@@ -161,7 +166,7 @@
       if (img) handleImageFallback(img, "📖");
     }
 
-    function renderNextMeeting(event) {
+    async function renderNextMeeting(event) {
       const slot = document.getElementById("next-meeting-slot");
       if (!event) {
         slot.innerHTML = `
@@ -178,7 +183,32 @@
           ${event.bookTitle ? `<p>📖 ${escapeHTML(event.bookTitle)}</p>` : ""}
           ${event.chapters ? `<p>${escapeHTML(event.chapters)}</p>` : ""}
           ${event.note ? `<p class="hint">${escapeHTML(event.note)}</p>` : ""}
+          <div class="rsvp-row" id="mini-rsvp-row"></div>
         </div>`;
+
+      let mine = null;
+      try {
+        mine = await getMyRsvp(event.id, session.user.uid);
+      } catch (err) {
+        return;
+      }
+      const row = document.getElementById("mini-rsvp-row");
+      row.innerHTML = Object.values(RSVP_STATUS).map((status) => `
+        <button type="button" class="rsvp-btn ${status === mine?.status ? "is-selected" : ""}" data-rsvp-btn="${status}">
+          ${escapeHTML(RSVP_LABELS[status])}
+        </button>`).join("");
+      row.querySelectorAll("[data-rsvp-btn]").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          btn.disabled = true;
+          try {
+            await setRsvp(event.id, session.user.uid, btn.dataset.rsvpBtn);
+            await renderNextMeeting(event);
+          } catch (err) {
+            showToast("No se pudo guardar tu confirmación.", "error");
+            btn.disabled = false;
+          }
+        });
+      });
     }
 
     function renderRecentReviews(reviews, book) {

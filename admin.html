@@ -152,6 +152,7 @@
     import { renderHeader, escapeHTML, formatDateTime, showToast, initOfflineBanner,} from "./js/app.js";
     import * as admin from "./js/admin.js";
     import { loadReviews, deleteReview } from "./js/reviews.js";
+    import { initNotificationBell } from "./js/notifications.js";
 
     let session, books = [], events = [], recs = [];
 
@@ -161,6 +162,7 @@
       if (!session) return;
       renderHeader("admin.html", session.profile);
       initLogoutButton();
+      initNotificationBell();
       initTabs();
 
       await Promise.all([refreshBooks(), refreshEvents(), refreshRecs()]);

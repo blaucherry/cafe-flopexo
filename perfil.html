@@ -65,6 +65,7 @@
     import { requireAuth, initLogoutButton } from "./js/auth.js";
     import { renderHeader, AVATAR_IDS, AVATAR_NAMES, avatarPath, showToast, ROLES, initOfflineBanner,} from "./js/app.js";
     import { updateOwnProfile, BIO_MAX_LENGTH } from "./js/profiles.js";
+    import { initNotificationBell } from "./js/notifications.js";
 
     let session, selectedAvatar;
 
@@ -74,6 +75,7 @@
       if (!session) return;
       renderHeader("perfil.html", session.profile);
       initLogoutButton();
+      initNotificationBell();
 
       const p = session.profile;
       document.getElementById("email-display").value = session.user.email;
