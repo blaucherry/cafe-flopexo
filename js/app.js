@@ -196,12 +196,19 @@ export function renderHeader(currentPage, profile) {
           ${links}
           ${adminLink}
         </ul>
+        <div class="notif-bell" data-notif-bell>
+          <button type="button" class="btn btn--icon btn--ghost" id="notif-bell-btn" aria-haspopup="true" aria-expanded="false" aria-label="Notificaciones">
+            🔔<span class="notif-dot" id="notif-dot" hidden></span>
+          </button>
+          <div class="notif-dropdown" id="notif-dropdown" hidden></div>
+        </div>
         <button class="btn btn--ghost btn--sm" data-logout type="button">Cerrar sesión</button>
       </nav>
     </div>`;
 
   initMobileNav();
   // auth.js adjunta el manejador real de logout vía initLogoutButton().
+  // notifications.js adjunta el manejador real de la campana vía initNotificationBell().
 }
 
 // --- Menú móvil reutilizable --------------------------------------------
