@@ -427,4 +427,51 @@ details[open].card > form { animation: rustic-form-open 300ms ease both; }
 @keyframes modal-fade { from { opacity: 0; } }
 @keyframes modal-pop { from { opacity: 0; transform: translateY(16px) scale(.96); } }
 
+/* --- Notificaciones --- */
+.notif-bell { position: relative; }
+.notif-bell .btn--icon { position: relative; font-size: 1.05rem; }
+.notif-dot {
+  position: absolute; top: 6px; right: 6px;
+  width: 9px; height: 9px; border-radius: 50%;
+  background: var(--color-teal); border: 2px solid var(--color-paper);
+}
+.notif-dropdown {
+  position: absolute; top: calc(100% + 10px); right: 0;
+  width: min(320px, 90vw);
+  background: var(--color-paper);
+  border: 1px solid var(--surface-card-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lift);
+  padding: 0.5rem;
+  z-index: 40;
+  max-height: 360px;
+  overflow-y: auto;
+}
+.notif-item { display: flex; gap: 0.6rem; padding: 0.55rem 0.5rem; border-radius: 10px; }
+.notif-item:hover { background: rgba(63,109,116,.08); }
+.notif-item__icon { font-size: 1.1rem; line-height: 1.4; }
+.notif-item p { margin: 0; font-size: 0.85rem; color: var(--color-ink); }
+.notif-empty { padding: 0.6rem 0.5rem; font-size: 0.85rem; color: var(--color-olive); margin: 0; }
+
+/* --- RSVP a reuniones --- */
+.rsvp-row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 0.6rem 0; }
+.rsvp-btn {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  padding: 0.4rem 0.85rem; border-radius: 999px; font-size: 0.82rem; font-weight: 700;
+  border: 1px solid rgba(103,53,31,.25); background: transparent; color: var(--color-roast);
+  cursor: pointer; transition: background .15s ease, color .15s ease, border-color .15s ease, transform .15s ease;
+}
+.rsvp-btn:hover { transform: translateY(-1px); }
+.rsvp-btn.is-selected {
+  background: linear-gradient(135deg, var(--color-teal-deep), var(--color-teal));
+  color: #fff; border-color: transparent;
+}
+.rsvp-summary { display: flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; color: var(--color-olive); margin: 0; }
+
+/* --- Progreso de lectura --- */
+.progress-bar { height: 8px; border-radius: 4px; background: rgba(103,53,31,.12); overflow: hidden; margin: 0.5rem 0; }
+.progress-bar__fill { height: 100%; background: linear-gradient(90deg, var(--color-teal-deep), var(--color-teal)); transition: width .3s ease; }
+.progress-slider { width: 100%; accent-color: var(--color-teal); }
+.progress-label { display: flex; align-items: baseline; justify-content: space-between; font-size: 0.85rem; color: var(--color-olive); margin-bottom: 0.2rem; }
+
 [hidden] { display: none !important; }
